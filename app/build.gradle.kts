@@ -55,6 +55,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:${rootProject.extra["lifecycle_version"]}")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:${rootProject.extra["lifecycle_version"]}")
+    implementation("androidx.compose.material:material-icons-extended:1.5.4")
 
     //Room
     implementation("androidx.room:room-runtime:${rootProject.extra["room_version"]}")

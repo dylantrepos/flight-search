@@ -1,6 +1,5 @@
 package com.example.flightsearch.data
 
-import androidx.annotation.NonNull
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -15,4 +14,9 @@ data class Airport(
     val iataCode: String,
     @ColumnInfo(name = "passengers")
     val passengers: Int
+)
+
+data class AirportTimetable(
+    val departure: Airport,
+    val arrival: Airport
 )

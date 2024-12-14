@@ -6,15 +6,19 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface AirportDao {
-    @Query ("""
+    @Query(
+        """
         SELECT * FROM airport 
-        ORDER BY name ASC
-    """)
+        ORDER BY passengers DESC
+    """
+    )
     fun getAll(): Flow<List<Airport>>
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM airport
         WHERE name LIKE '%' || :airportName || '%'
-    """)
+    """
+    )
     fun searchAirport(airportName: String): Flow<List<Airport>>
 }

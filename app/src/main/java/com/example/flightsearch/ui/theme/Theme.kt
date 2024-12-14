@@ -1,17 +1,15 @@
 package com.example.compose
-import android.app.Activity
+
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.Typography
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import com.example.ui.theme.AppTypography
 
@@ -249,57 +247,57 @@ private val highContrastDarkColorScheme = darkColorScheme(
 )
 
 val extendedLight = ExtendedColorScheme(
-  customYellow = ColorFamily(
-  customYellowLight,
-  onCustomYellowLight,
-  customYellowContainerLight,
-  onCustomYellowContainerLight,
-  ),
+    customYellow = ColorFamily(
+        customYellowLight,
+        onCustomYellowLight,
+        customYellowContainerLight,
+        onCustomYellowContainerLight,
+    ),
 )
 
 val extendedDark = ExtendedColorScheme(
-  customYellow = ColorFamily(
-  customYellowDark,
-  onCustomYellowDark,
-  customYellowContainerDark,
-  onCustomYellowContainerDark,
-  ),
+    customYellow = ColorFamily(
+        customYellowDark,
+        onCustomYellowDark,
+        customYellowContainerDark,
+        onCustomYellowContainerDark,
+    ),
 )
 
 val extendedLightMediumContrast = ExtendedColorScheme(
-  customYellow = ColorFamily(
-  customYellowLightMediumContrast,
-  onCustomYellowLightMediumContrast,
-  customYellowContainerLightMediumContrast,
-  onCustomYellowContainerLightMediumContrast,
-  ),
+    customYellow = ColorFamily(
+        customYellowLightMediumContrast,
+        onCustomYellowLightMediumContrast,
+        customYellowContainerLightMediumContrast,
+        onCustomYellowContainerLightMediumContrast,
+    ),
 )
 
 val extendedLightHighContrast = ExtendedColorScheme(
-  customYellow = ColorFamily(
-  customYellowLightHighContrast,
-  onCustomYellowLightHighContrast,
-  customYellowContainerLightHighContrast,
-  onCustomYellowContainerLightHighContrast,
-  ),
+    customYellow = ColorFamily(
+        customYellowLightHighContrast,
+        onCustomYellowLightHighContrast,
+        customYellowContainerLightHighContrast,
+        onCustomYellowContainerLightHighContrast,
+    ),
 )
 
 val extendedDarkMediumContrast = ExtendedColorScheme(
-  customYellow = ColorFamily(
-  customYellowDarkMediumContrast,
-  onCustomYellowDarkMediumContrast,
-  customYellowContainerDarkMediumContrast,
-  onCustomYellowContainerDarkMediumContrast,
-  ),
+    customYellow = ColorFamily(
+        customYellowDarkMediumContrast,
+        onCustomYellowDarkMediumContrast,
+        customYellowContainerDarkMediumContrast,
+        onCustomYellowContainerDarkMediumContrast,
+    ),
 )
 
 val extendedDarkHighContrast = ExtendedColorScheme(
-  customYellow = ColorFamily(
-  customYellowDarkHighContrast,
-  onCustomYellowDarkHighContrast,
-  customYellowContainerDarkHighContrast,
-  onCustomYellowContainerDarkHighContrast,
-  ),
+    customYellow = ColorFamily(
+        customYellowDarkHighContrast,
+        onCustomYellowDarkHighContrast,
+        customYellowContainerDarkHighContrast,
+        onCustomYellowContainerDarkHighContrast,
+    ),
 )
 
 @Immutable
@@ -318,23 +316,23 @@ val unspecified_scheme = ColorFamily(
 fun FlightSearchTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable() () -> Unit
 ) {
-  val colorScheme = when {
-      dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-          val context = LocalContext.current
-          if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-      }
-      
-      darkTheme -> darkScheme
-      else -> lightScheme
-  }
+    val colorScheme = when {
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            val context = LocalContext.current
+            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        }
 
-  MaterialTheme(
-    colorScheme = colorScheme,
-    typography = AppTypography,
-    content = content
-  )
+        darkTheme -> darkScheme
+        else -> lightScheme
+    }
+
+    MaterialTheme(
+        colorScheme = colorScheme,
+        typography = AppTypography,
+        content = content
+    )
 }
 

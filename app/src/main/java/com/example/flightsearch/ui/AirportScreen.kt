@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -28,9 +25,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SearchBar
-import androidx.compose.material3.SearchBarDefaults
-import androidx.compose.material3.Shapes
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -43,11 +37,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.input.key.KeyEvent
-import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -58,8 +50,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.compose.FlightSearchTheme
 import com.example.flightsearch.R
 import com.example.flightsearch.data.Airport
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,7 +68,7 @@ fun FlightSearchApp(
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
                 colors = TopAppBarDefaults.largeTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.inversePrimary
+                    containerColor = MaterialTheme.colorScheme.primary
                 )
             )
         }
@@ -86,7 +80,8 @@ fun FlightSearchApp(
             onSearch = {},
             onActiveChange = {},
             modifier = Modifier.fillMaxSize(),
-            contentPadding = innerPadding,        )
+            contentPadding = innerPadding,
+        )
     }
 }
 
@@ -113,7 +108,7 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp),
             modifier = Modifier.padding(20.dp)
         ) {
-            TextField (
+            TextField(
                 value = query,
                 onValueChange = onQueryChange,
                 placeholder = { Text(stringResource(R.string.search_placeholder)) },
@@ -125,9 +120,10 @@ fun HomeScreen(
                     .onFocusChanged { focusState ->
                         isFocused = focusState.isFocused
                     },
-                colors = TextFieldDefaults.textFieldColors(
+                colors = TextFieldDefaults.colors(
                     focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
+                    unfocusedIndicatorColor = Color.Transparent,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.tertiaryContainer
                 ),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions.Default.copy(
@@ -141,7 +137,10 @@ fun HomeScreen(
             )
             if (query.isNotEmpty() && !isFocused) {
                 Text(
-                    text = stringResource(R.string.flights_from, query.toUpperCase()),
+                    text = stringResource(
+                        R.string.flights_from,
+                        query.uppercase(Locale.getDefault())
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -168,71 +167,144 @@ fun SuggestionList(
         contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-       items(
-           items = airports,
-           key = { airport -> airport.id}
-       ) { airport ->
-           Row(
-               modifier = Modifier
-               .fillMaxWidth()
-               .clickable(enabled = true) {
-                   onSuggestionClick.invoke(airport.iataCode)
-               }
-           ) {
-               Text(
-                   text = airport.iataCode,
-                   style = MaterialTheme.typography.labelMedium,
-                   fontWeight = FontWeight.Bold
-               )
-               Spacer(Modifier.width(8.dp))
-               Text(
-                   text = airport.airportName,
-                   style = MaterialTheme.typography.labelMedium,
-                   fontWeight = FontWeight.Light
-               )
-           }
-       }
+        items(
+            items = airports,
+            key = { airport -> airport.id }
+        ) { airport ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = true) {
+                        onSuggestionClick.invoke(airport.iataCode)
+                    }
+            ) {
+                Text(
+                    text = airport.iataCode,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = airport.airportName,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Light
+                )
+            }
+        }
     }
 }
 
 @Composable
-fun FlightList(
+fun FlightCard(
+    departure: Airport,
+    arrival: Airport,
     modifier: Modifier = Modifier,
 ) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(topEnd = 20.dp))
+            .background(MaterialTheme.colorScheme.secondary)
+            .padding(20.dp)
 
+    ) {
+        Column {
+            Text(
+                stringResource(R.string.departure).uppercase(Locale.getDefault()),
+                style = MaterialTheme.typography.labelMedium
+            )
+            Spacer(Modifier.height(2.dp))
+            Row {
+                Text(
+                    departure.iataCode,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.labelSmall
+                )
+                Spacer(Modifier.width(5.dp))
+                Text(
+                    departure.airportName,
+                    fontWeight = FontWeight.Light,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+            Spacer(Modifier.height(5.dp))
+            Text(
+                stringResource(R.string.arrival).uppercase(Locale.getDefault()),
+                style = MaterialTheme.typography.labelMedium,
+            )
+            Spacer(Modifier.height(2.dp))
+            Row {
+                Text(
+                    arrival.iataCode,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.labelSmall
+                )
+                Spacer(Modifier.width(5.dp))
+                Text(
+                    arrival.airportName,
+                    fontWeight = FontWeight.Light,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun FlightCardPreview() {
+    FlightSearchTheme {
+        FlightCard(
+            departure = Airport(
+                0,
+                "Paris airport",
+                "CDG",
+                123123
+            ),
+            arrival = Airport(
+                1,
+                "Los Angeles airport",
+                "LAX",
+                123123
+            )
+        )
+    }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun SuggestionListPreview() {
-    SuggestionList(
-        airports = List(3) { index ->
-            Airport(
-                index,
-                "lorem ipsum airport",
-                "LIA",
-                123123
-            )
-        },
-        onSuggestionClick = {}
-    )
+    FlightSearchTheme {
+        SuggestionList(
+            airports = List(3) { index ->
+                Airport(
+                    index,
+                    "lorem ipsum airport",
+                    "LIA",
+                    123123
+                )
+            },
+            onSuggestionClick = {}
+        )
+    }
 }
 
 @Preview
 @Composable
 fun HomeScreenPreview() {
-    HomeScreen(
-        airports = List(3) { index ->
-            Airport(
-                index,
-                "lorem ipsum airport",
-                "LIA",
-                123123
-            )
-        },
-        query = "",
-        onQueryChange = {},
-        onSearch = {},
-        onActiveChange = {}
-    )
+    FlightSearchTheme {
+        HomeScreen(
+            airports = List(3) { index ->
+                Airport(
+                    index,
+                    "lorem ipsum airport",
+                    "LIA",
+                    123123
+                )
+            },
+            query = "",
+            onQueryChange = {},
+            onSearch = {},
+            onActiveChange = {}
+        )
+    }
 }

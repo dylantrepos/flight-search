@@ -27,7 +27,8 @@ data class Favorite(
 
 data class AirportTimetable(
     val departure: Airport,
-    val arrival: Airport
+    val arrival: Airport,
+    val isFavorite: Boolean = false
 )
 
 data class FavoriteFlight(

@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -38,12 +39,14 @@ class AirportViewModel(private val flightRepository: FlightRepository) : ViewMod
         emptyList()
     )
 
-    val favorites: StateFlow<FavoriteUiState> =
-        flightRepository.getFavoriteFlight().map { FavoriteUiState(it) }
+    val favorites: StateFlow<List<AirportTimetable>> =
+        flightRepository.getFavoriteFlight().map { favorites ->
+            mapFavoritesToTimetables(favorites)
+        }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(TIMEOUT_MILLIS),
-                initialValue = FavoriteUiState()
+                initialValue = emptyList()
             )
 
     fun updateQuery(newQuery: String) {
@@ -58,9 +61,14 @@ class AirportViewModel(private val flightRepository: FlightRepository) : ViewMod
             getAllAirport().collect { airportList ->
                 _airportTimetable.value = airportList.mapNotNull { arrival ->
                     if (arrival.iataCode != airport.iataCode) {
+                        val isFavorite = flightRepository.findFavorite(
+                            departureCode = airport.iataCode,
+                            destinationCode = arrival.iataCode
+                        ).firstOrNull()
                         AirportTimetable(
                             departure = airport,
-                            arrival = arrival
+                            arrival = arrival,
+                            isFavorite = isFavorite !== null
                         )
                     } else {
                         null
@@ -71,6 +79,24 @@ class AirportViewModel(private val flightRepository: FlightRepository) : ViewMod
     }
 
     private fun getAllAirport(): Flow<List<Airport>> = flightRepository.getAllAirport()
+
+    private suspend fun mapFavoritesToTimetables(favorites: List<Favorite>): List<AirportTimetable> {
+        val timetables = mutableListOf<AirportTimetable>()
+        for (favorite in favorites) {
+            val departureAirport =
+                flightRepository.getAirportDetails(favorite.departureCode).first()
+            val arrivalAirport =
+                flightRepository.getAirportDetails(favorite.destinationCode).first()
+            timetables.add(
+                AirportTimetable(
+                    departure = departureAirport,
+                    arrival = arrivalAirport,
+                    isFavorite = true
+                )
+            )
+        }
+        return timetables
+    }
 
     suspend fun toggleFavorite(favorite: Favorite) {
         val favoriteFound =
@@ -89,5 +115,3 @@ class AirportViewModel(private val flightRepository: FlightRepository) : ViewMod
         private const val TIMEOUT_MILLIS = 5_000L
     }
 }
-
-data class FavoriteUiState(val favoriteList: List<Favorite> = listOf())

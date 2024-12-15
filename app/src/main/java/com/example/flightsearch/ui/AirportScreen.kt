@@ -1,5 +1,9 @@
 package com.example.flightsearch.ui
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.EaseInOut
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,7 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -79,7 +84,7 @@ fun FlightSearchApp(
                     title = {
                         Text(
                             text = stringResource(R.string.app_name),
-                            color = Color.DarkGray
+                            color = MaterialTheme.colorScheme.onPrimary
                         )
                     },
                     colors = TopAppBarDefaults.largeTopAppBarColors(
@@ -114,7 +119,7 @@ fun HomeScreen(
     query: String,
     modifier: Modifier = Modifier,
     timetable: List<AirportTimetable>,
-    favorites: FavoriteUiState,
+    favorites: List<AirportTimetable>,
     toggleFavorite: (Favorite) -> Unit,
     onQueryChange: (String) -> Unit,
     onSelectAirport: (Airport) -> Unit,
@@ -140,22 +145,28 @@ fun HomeScreen(
                 placeholder = {
                     Text(
                         text = stringResource(R.string.search_placeholder),
-                        color = Color.DarkGray
+                        color = MaterialTheme.colorScheme.onTertiaryContainer
                     )
                 },
                 leadingIcon = {
                     Icon(
                         Icons.Default.Search,
                         contentDescription = null,
-                        tint = Color.DarkGray
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer
                     )
                 },
                 trailingIcon = {
-                    Icon(
-                        Icons.Default.Mic,
-                        contentDescription = null,
-                        tint = Color.DarkGray
-                    )
+                    if (query.isNotEmpty()) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                            modifier = Modifier
+                                .clickable {
+                                    onQueryChange("")
+                                }
+                        )
+                    }
                 },
                 shape = RoundedCornerShape(100),
                 modifier = Modifier
@@ -168,8 +179,8 @@ fun HomeScreen(
                     unfocusedIndicatorColor = Color.Transparent,
                     unfocusedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
                     focusedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                    focusedTextColor = Color.DarkGray,
-                    unfocusedTextColor = Color.DarkGray
+                    focusedTextColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onTertiaryContainer
                 ),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions.Default.copy(
@@ -202,11 +213,14 @@ fun HomeScreen(
                         modifier = Modifier.background(MaterialTheme.colorScheme.background)
                     )
                 } else {
-                   
+                    TimetableList(
+                        timetable = if (query.isEmpty()) favorites else timetable,
+                        onSave = toggleFavorite,
+                    )
                 }
             } else {
                 TimetableList(
-                    timetable = timetable,
+                    timetable = if (query.isEmpty()) favorites else timetable,
                     onSave = toggleFavorite,
                 )
             }
@@ -230,12 +244,23 @@ fun TimetableList(
             items = timetable,
             key = { flight -> "${flight.departure.iataCode}-${flight.arrival.iataCode}" }
         ) { flight ->
-            var isStarred by remember { mutableStateOf(false) }
+            var isStarred by remember { mutableStateOf(flight.isFavorite) }
+            val animatedTint by animateColorAsState(
+                targetValue = if (isStarred) Color(0xFFFFD700) else Color.LightGray,
+                animationSpec = tween(durationMillis = 1000) // Adjust duration as needed
+            )
+
+            val scale by animateFloatAsState(
+                targetValue = if (isStarred) 1.1f else 1f,
+                animationSpec = tween(250, easing = EaseInOut)
+            )
 
             Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(topEnd = 20.dp))
+                    .clip(RoundedCornerShape(20.dp))
                     .background(MaterialTheme.colorScheme.secondaryContainer)
                     .clickable {
                         isStarred = !isStarred
@@ -255,7 +280,7 @@ fun TimetableList(
                         stringResource(R.string.departure).uppercase(Locale.getDefault()),
                         fontWeight = FontWeight.Light,
                         style = MaterialTheme.typography.labelMedium,
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                     Spacer(Modifier.height(2.dp))
                     Row {
@@ -263,14 +288,14 @@ fun TimetableList(
                             flight.departure.iataCode,
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color.Black
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
                         )
                         Spacer(Modifier.width(5.dp))
                         Text(
                             flight.departure.airportName,
                             fontWeight = FontWeight.Light,
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color.Black
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
                         )
                     }
                     Spacer(Modifier.height(10.dp))
@@ -278,7 +303,7 @@ fun TimetableList(
                         stringResource(R.string.arrival).uppercase(Locale.getDefault()),
                         fontWeight = FontWeight.Light,
                         style = MaterialTheme.typography.labelMedium,
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                     Spacer(Modifier.height(2.dp))
                     Row {
@@ -286,23 +311,28 @@ fun TimetableList(
                             flight.arrival.iataCode,
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color.Black
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
                         )
                         Spacer(Modifier.width(5.dp))
                         Text(
                             flight.arrival.airportName,
                             fontWeight = FontWeight.Light,
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color.Black
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
                         )
                     }
                 }
                 Icon(
                     imageVector = Icons.Filled.Star,
                     contentDescription = null,
-                    tint = if (isStarred) Color.Yellow else MaterialTheme.colorScheme.onSurface,
+                    tint = animatedTint,
                     modifier = Modifier
-                        .padding(16.dp)
+                        .width(30.dp)
+                        .height(30.dp)
+                        .graphicsLayer(
+                            scaleX = scale,
+                            scaleY = scale
+                        )
                 )
             }
         }
@@ -379,6 +409,32 @@ fun TimetableListPreview() {
 
 @Preview(showBackground = true)
 @Composable
+fun TimetableListDarkPreview() {
+    FlightSearchTheme(darkTheme = true) {
+        TimetableList(
+            timetable = List(3) { index ->
+                AirportTimetable(
+                    departure = Airport(
+                        0,
+                        "Paris airport",
+                        "CDG$index",
+                        123123
+                    ),
+                    arrival = Airport(
+                        1,
+                        "Los Angeles airport",
+                        "LAX$index",
+                        123123
+                    )
+                )
+            },
+            onSave = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
 fun SuggestionListPreview() {
     FlightSearchTheme {
         SuggestionList(
@@ -411,7 +467,7 @@ fun HomeScreenPreview() {
             query = "",
             onQueryChange = {},
             onSelectAirport = {},
-            favorites = FavoriteUiState(),
+            favorites = listOf(),
             toggleFavorite = {},
             timetable = emptyList(),
         )
@@ -434,9 +490,28 @@ fun HomeScreenDarkPreview() {
             query = "",
             onQueryChange = {},
             onSelectAirport = {},
-            favorites = FavoriteUiState(),
+            favorites = listOf(),
             toggleFavorite = {},
             timetable = emptyList(),
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview()
+@Composable
+fun TopBarPreview() {
+    FlightSearchTheme(darkTheme = true) {
+        TopAppBar(
+            title = {
+                Text(
+                    text = stringResource(R.string.app_name),
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            },
+            colors = TopAppBarDefaults.largeTopAppBarColors(
+                containerColor = MaterialTheme.colorScheme.primary
+            )
         )
     }
 }

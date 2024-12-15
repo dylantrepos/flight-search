@@ -317,6 +317,7 @@ fun FlightSearchTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = false,
+    extendedColorScheme: ExtendedColorScheme = if (darkTheme) extendedDark else extendedLight,
     content: @Composable() () -> Unit
 ) {
     val colorScheme = when {
@@ -335,4 +336,3 @@ fun FlightSearchTheme(
         content = content
     )
 }
-

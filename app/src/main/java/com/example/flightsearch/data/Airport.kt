@@ -16,7 +16,22 @@ data class Airport(
     val passengers: Int
 )
 
+@Entity(tableName = "favorite")
+data class Favorite(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @ColumnInfo(name = "departure_code")
+    val departureCode: String,
+    @ColumnInfo(name = "destination_code")
+    val destinationCode: String
+)
+
 data class AirportTimetable(
     val departure: Airport,
     val arrival: Airport
 )
+
+data class FavoriteFlight(
+    val departureCode: String,
+    val destinationCode: String
+)
+

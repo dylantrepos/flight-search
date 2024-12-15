@@ -6,8 +6,8 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 
-@Database(entities = arrayOf(Airport::class), version = 1)
-abstract class AppDatabase: RoomDatabase() {
+@Database(entities = arrayOf(Airport::class, Favorite::class), version = 1)
+abstract class AppDatabase : RoomDatabase() {
     abstract fun airportDao(): AirportDao
 
     companion object {

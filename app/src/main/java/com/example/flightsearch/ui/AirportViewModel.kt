@@ -1,26 +1,24 @@
 package com.example.flightsearch.ui
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
-import com.example.flightsearch.FlightSearchApplication
 import com.example.flightsearch.data.Airport
-import com.example.flightsearch.data.AirportDao
 import com.example.flightsearch.data.AirportTimetable
+import com.example.flightsearch.data.Favorite
+import com.example.flightsearch.data.FlightRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class AirportViewModel(private val airportDao: AirportDao) : ViewModel() {
+class AirportViewModel(private val flightRepository: FlightRepository) : ViewModel() {
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query
 
@@ -32,13 +30,21 @@ class AirportViewModel(private val airportDao: AirportDao) : ViewModel() {
         if (query.isEmpty()) {
             getAllAirport().map { it }
         } else {
-            airportDao.searchAirport("%$query%").map { it }
+            flightRepository.getAirportTimetable("%$query%").map { it }
         }
     }.stateIn(
         viewModelScope,
         SharingStarted.Lazily,
         emptyList()
     )
+
+    val favorites: StateFlow<FavoriteUiState> =
+        flightRepository.getFavoriteFlight().map { FavoriteUiState(it) }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(TIMEOUT_MILLIS),
+                initialValue = FavoriteUiState()
+            )
 
     fun updateQuery(newQuery: String) {
         if (_airportTimetable.value.isNotEmpty()) {
@@ -50,28 +56,38 @@ class AirportViewModel(private val airportDao: AirportDao) : ViewModel() {
     fun generateTimetable(airport: Airport) {
         viewModelScope.launch {
             getAllAirport().collect { airportList ->
-                _airportTimetable.value = airportList.map { arrival ->
-                    AirportTimetable(
-                        departure = airport,
-                        arrival = arrival
-                    )
+                _airportTimetable.value = airportList.mapNotNull { arrival ->
+                    if (arrival.iataCode != airport.iataCode) {
+                        AirportTimetable(
+                            departure = airport,
+                            arrival = arrival
+                        )
+                    } else {
+                        null
+                    }
                 }
             }
         }
     }
 
-    private fun getAllAirport(): Flow<List<Airport>> = airportDao.getAll()
+    private fun getAllAirport(): Flow<List<Airport>> = flightRepository.getAllAirport()
 
-    private fun searchAirportName(airportName: String): Flow<List<Airport>> =
-        airportDao.searchAirport(airportName)
+    suspend fun toggleFavorite(favorite: Favorite) {
+        val favoriteFound =
+            flightRepository.findFavorite(favorite.departureCode, favorite.destinationCode).first()
+
+        if (favoriteFound != null) {
+            Log.d("AirportViewModel", "not null $favoriteFound")
+            flightRepository.deleteFavoriteFlight(favoriteFound)
+        } else {
+            Log.d("AirportViewModel", "null")
+            flightRepository.addFavoriteFlight(favorite)
+        }
+    }
 
     companion object {
-        val factory: ViewModelProvider.Factory = viewModelFactory {
-            initializer {
-                val application = (this[APPLICATION_KEY] as FlightSearchApplication)
-                AirportViewModel(application.database.airportDao())
-            }
-        }
+        private const val TIMEOUT_MILLIS = 5_000L
     }
 }
 
+data class FavoriteUiState(val favoriteList: List<Favorite> = listOf())

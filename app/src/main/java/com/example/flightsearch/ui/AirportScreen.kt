@@ -1,6 +1,5 @@
 package com.example.flightsearch.ui
 
-import androidx.annotation.ColorRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
@@ -51,22 +51,27 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.compose.FlightSearchTheme
+import com.example.flightsearch.AppViewModelProvider
 import com.example.flightsearch.R
 import com.example.flightsearch.data.Airport
 import com.example.flightsearch.data.AirportTimetable
+import com.example.flightsearch.data.Favorite
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FlightSearchApp(
-    viewModel: AirportViewModel = viewModel(factory = AirportViewModel.factory)
+    viewModel: AirportViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
     FlightSearchTheme {
         val airports by viewModel.airports.collectAsState()
         val query by viewModel.query.collectAsState()
         val airportTimetable by viewModel.airportTimetable.collectAsState()
+        val favorites by viewModel.favorites.collectAsState()
 
         Scaffold(
             topBar = {
@@ -86,12 +91,16 @@ fun FlightSearchApp(
             HomeScreen(
                 airports = airports,
                 query = query,
+                favorites = favorites,
                 onQueryChange = viewModel::updateQuery,
-                onSearch = {},
-                onActiveChange = {},
                 onSelectAirport = viewModel::generateTimetable,
                 timetable = airportTimetable,
                 modifier = Modifier.fillMaxSize(),
+                toggleFavorite = { favorite ->
+                    viewModel.viewModelScope.launch {
+                        viewModel.toggleFavorite(favorite)
+                    }
+                },
                 contentPadding = innerPadding,
             )
         }
@@ -105,9 +114,9 @@ fun HomeScreen(
     query: String,
     modifier: Modifier = Modifier,
     timetable: List<AirportTimetable>,
-    onSearch: (String) -> Unit,
+    favorites: FavoriteUiState,
+    toggleFavorite: (Favorite) -> Unit,
     onQueryChange: (String) -> Unit,
-    onActiveChange: (Boolean) -> Unit,
     onSelectAirport: (Airport) -> Unit,
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
@@ -117,7 +126,9 @@ fun HomeScreen(
     val focusManager = LocalFocusManager.current
 
     Box(
-        modifier = modifier.padding(contentPadding)
+        modifier = modifier
+            .padding(contentPadding)
+            .clickable { focusManager.clearFocus() }
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(20.dp),
@@ -170,7 +181,7 @@ fun HomeScreen(
                     focusManager.clearFocus()
                 })
             )
-            if (query.isNotEmpty() && !isFocused) {
+            if (query.isNotEmpty() && !isFocused && timetable.isNotEmpty()) {
                 Text(
                     text = stringResource(
                         R.string.flights_from,
@@ -180,18 +191,24 @@ fun HomeScreen(
                     fontWeight = FontWeight.Bold
                 )
             }
-            if (timetable.isNotEmpty()) {
-                TimetableList(
-                    timetable = timetable
-                )
-            } else {
-                if (query.trim().length > 0) {
+            if (isFocused || query.isNotEmpty() && timetable.isEmpty()) {
+                if (query.isNotEmpty()) {
                     SuggestionList(
                         airports = airports,
-                        onSuggestionClick = onSelectAirport,
+                        onSuggestionClick = {
+                            onSelectAirport(it)
+                            focusManager.clearFocus()
+                        },
                         modifier = Modifier.background(MaterialTheme.colorScheme.background)
                     )
+                } else {
+                   
                 }
+            } else {
+                TimetableList(
+                    timetable = timetable,
+                    onSave = toggleFavorite,
+                )
             }
         }
     }
@@ -200,6 +217,7 @@ fun HomeScreen(
 @Composable
 fun TimetableList(
     timetable: List<AirportTimetable>,
+    onSave: (Favorite) -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
@@ -219,6 +237,15 @@ fun TimetableList(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(topEnd = 20.dp))
                     .background(MaterialTheme.colorScheme.secondaryContainer)
+                    .clickable {
+                        isStarred = !isStarred
+                        onSave(
+                            Favorite(
+                                departureCode = flight.departure.iataCode,
+                                destinationCode = flight.arrival.iataCode
+                            )
+                        )
+                    }
                     .padding(20.dp)
             ) {
                 Column(
@@ -246,7 +273,7 @@ fun TimetableList(
                             color = Color.Black
                         )
                     }
-                    Spacer(Modifier.height(5.dp))
+                    Spacer(Modifier.height(10.dp))
                     Text(
                         stringResource(R.string.arrival).uppercase(Locale.getDefault()),
                         fontWeight = FontWeight.Light,
@@ -276,7 +303,6 @@ fun TimetableList(
                     tint = if (isStarred) Color.Yellow else MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier
                         .padding(16.dp)
-                        .clickable { isStarred = !isStarred }
                 )
             }
         }
@@ -294,17 +320,17 @@ fun SuggestionList(
     LazyColumn(
         modifier = modifier,
         contentPadding = contentPadding,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(
             items = airports,
             key = { airport -> airport.id }
         ) { airport ->
             Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .height(30.dp)
                     .clickable(enabled = true) {
-//                        onSuggestionClick.invoke(airport.iataCode)
                         onSuggestionClick.invoke(airport)
                     }
             ) {
@@ -346,6 +372,7 @@ fun TimetableListPreview() {
                     )
                 )
             },
+            onSave = {},
         )
     }
 }
@@ -383,10 +410,10 @@ fun HomeScreenPreview() {
             },
             query = "",
             onQueryChange = {},
-            onSearch = {},
             onSelectAirport = {},
+            favorites = FavoriteUiState(),
+            toggleFavorite = {},
             timetable = emptyList(),
-            onActiveChange = {}
         )
     }
 }
@@ -406,10 +433,10 @@ fun HomeScreenDarkPreview() {
             },
             query = "",
             onQueryChange = {},
-            onSearch = {},
             onSelectAirport = {},
+            favorites = FavoriteUiState(),
+            toggleFavorite = {},
             timetable = emptyList(),
-            onActiveChange = {}
         )
     }
 }

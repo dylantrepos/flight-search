@@ -1,6 +1,5 @@
 package com.example.flightsearch.ui
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.flightsearch.data.Airport
@@ -103,10 +102,8 @@ class AirportViewModel(private val flightRepository: FlightRepository) : ViewMod
             flightRepository.findFavorite(favorite.departureCode, favorite.destinationCode).first()
 
         if (favoriteFound != null) {
-            Log.d("AirportViewModel", "not null $favoriteFound")
             flightRepository.deleteFavoriteFlight(favoriteFound)
         } else {
-            Log.d("AirportViewModel", "null")
             flightRepository.addFavoriteFlight(favorite)
         }
     }

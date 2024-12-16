@@ -5,14 +5,14 @@ import kotlinx.coroutines.flow.Flow
 class FlightRepository(
     private val airportDao: AirportDao
 ) {
-    fun getAllAirport(): Flow<List<Airport>> = airportDao.getAllAirport()
+    fun fetchAllAirports(): Flow<List<Airport>> = airportDao.fetchAllAirports()
 
-    fun getAirportDetails(iapa: String): Flow<Airport> = airportDao.getAirportDetails(iapa)
+    fun getAirportDetails(iata: String): Flow<Airport> = airportDao.getAirportDetails(iata)
 
     fun getAirportTimetable(airportName: String): Flow<List<Airport>> =
         airportDao.getAirportTimetable(airportName)
 
-    fun getFavoriteFlight(): Flow<List<Favorite>> = airportDao.getFavoriteFlight()
+    fun getFavoriteFlights(): Flow<List<Favorite>> = airportDao.getFavoriteFlights()
 
     suspend fun addFavoriteFlight(flight: Favorite) =
         airportDao.addFavoriteFlight(flight)
@@ -23,4 +23,3 @@ class FlightRepository(
     fun findFavorite(departureCode: String, destinationCode: String) =
         airportDao.findFavorite(departureCode, destinationCode)
 }
-

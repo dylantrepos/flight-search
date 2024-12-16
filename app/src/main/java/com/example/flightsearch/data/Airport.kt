@@ -6,23 +6,17 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "airport")
 data class Airport(
-    @PrimaryKey
-    val id: Int,
-    @ColumnInfo(name = "name")
-    val airportName: String,
-    @ColumnInfo(name = "iata_code")
-    val iataCode: String,
-    @ColumnInfo(name = "passengers")
-    val passengers: Int
+    @PrimaryKey val id: Int,
+    @ColumnInfo(name = "name") val name: String,
+    @ColumnInfo(name = "iata_code") val iataCode: String,
+    @ColumnInfo(name = "passengers") val passengers: Int
 )
 
 @Entity(tableName = "favorite")
 data class Favorite(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    @ColumnInfo(name = "departure_code")
-    val departureCode: String,
-    @ColumnInfo(name = "destination_code")
-    val destinationCode: String
+    @ColumnInfo(name = "departure_code") val departureCode: String,
+    @ColumnInfo(name = "destination_code") val destinationCode: String
 )
 
 data class AirportTimetable(
@@ -30,9 +24,3 @@ data class AirportTimetable(
     val arrival: Airport,
     val isFavorite: Boolean = false
 )
-
-data class FavoriteFlight(
-    val departureCode: String,
-    val destinationCode: String
-)
-

@@ -202,8 +202,8 @@ fun HomeScreen(
                     fontWeight = FontWeight.Bold
                 )
             }
-            if (isFocused || query.isNotEmpty() && timetable.isEmpty()) {
-                if (query.isNotEmpty()) {
+            if (isFocused || query.isNotEmpty()) {
+                if (query.isNotEmpty() && timetable.isEmpty()) {
                     SuggestionList(
                         airports = airports,
                         onSuggestionClick = {
@@ -258,7 +258,7 @@ fun TimetableList(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = modifier
+                modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(20.dp))
                     .background(MaterialTheme.colorScheme.secondaryContainer)
@@ -292,7 +292,7 @@ fun TimetableList(
                         )
                         Spacer(Modifier.width(5.dp))
                         Text(
-                            flight.departure.airportName,
+                            flight.departure.name,
                             fontWeight = FontWeight.Light,
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSecondaryContainer
@@ -315,7 +315,7 @@ fun TimetableList(
                         )
                         Spacer(Modifier.width(5.dp))
                         Text(
-                            flight.arrival.airportName,
+                            flight.arrival.name,
                             fontWeight = FontWeight.Light,
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSecondaryContainer
@@ -372,7 +372,7 @@ fun SuggestionList(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = airport.airportName,
+                    text = airport.name,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Light
                 )

@@ -6,6 +6,7 @@ import com.example.flightsearch.data.Airport
 import com.example.flightsearch.data.AirportTimetable
 import com.example.flightsearch.data.Favorite
 import com.example.flightsearch.data.FlightRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,9 +24,7 @@ class AirportViewModel(private val flightRepository: FlightRepository) : ViewMod
     private val _airportTimetable = MutableStateFlow<List<AirportTimetable>>(emptyList())
     val airportTimetable: StateFlow<List<AirportTimetable>> = _airportTimetable
 
-    private val _errorMessage = MutableStateFlow<String?>(null)
-    val errorMessage: StateFlow<String?> = _errorMessage
-
+    @OptIn(ExperimentalCoroutinesApi::class)
     val airports: StateFlow<List<Airport>> = _query
         .flatMapLatest { query ->
             if (query.isEmpty()) {

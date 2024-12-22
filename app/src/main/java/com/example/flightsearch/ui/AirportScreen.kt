@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.AirplanemodeActive
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -193,19 +194,33 @@ fun HomeScreen(
                 })
             )
             if (query.isNotEmpty() && !isFocused && timetable.isNotEmpty()) {
-                Text(
-                    text = stringResource(
-                        R.string.flights_from,
-                        query.uppercase(Locale.getDefault())
-                    ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.AirplanemodeActive,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .width(15.dp)
+                            .height(15.dp)
+                            .graphicsLayer(rotationZ = 45f)
+                    )
+                    Text(
+                        text = stringResource(
+                            R.string.flights_from,
+                            query.uppercase(Locale.getDefault())
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
             if (isFocused || query.isNotEmpty()) {
                 if (query.isNotEmpty() && timetable.isEmpty()) {
                     SuggestionList(
                         airports = airports,
+                        query,
                         onSuggestionClick = {
                             onSelectAirport(it)
                             focusManager.clearFocus()
@@ -215,12 +230,14 @@ fun HomeScreen(
                 } else {
                     TimetableList(
                         timetable = if (query.isEmpty()) favorites else timetable,
+                        isFavorite = query.isEmpty(),
                         onSave = toggleFavorite,
                     )
                 }
             } else {
                 TimetableList(
                     timetable = if (query.isEmpty()) favorites else timetable,
+                    isFavorite = query.isEmpty(),
                     onSave = toggleFavorite,
                 )
             }
@@ -231,10 +248,18 @@ fun HomeScreen(
 @Composable
 fun TimetableList(
     timetable: List<AirportTimetable>,
+    isFavorite: Boolean = false,
     onSave: (Favorite) -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
+    if (isFavorite) {
+        Text(
+            text = "My flights",
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold
+        )
+    }
     LazyColumn(
         modifier = modifier,
         contentPadding = contentPadding,
@@ -282,6 +307,7 @@ fun TimetableList(
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
+
                     Spacer(Modifier.height(2.dp))
                     Row {
                         Text(
@@ -299,6 +325,7 @@ fun TimetableList(
                         )
                     }
                     Spacer(Modifier.height(10.dp))
+
                     Text(
                         stringResource(R.string.arrival).uppercase(Locale.getDefault()),
                         fontWeight = FontWeight.Light,
@@ -343,39 +370,51 @@ fun TimetableList(
 @Composable
 fun SuggestionList(
     airports: List<Airport>,
+    query: String,
     onSuggestionClick: (Airport) -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
-    LazyColumn(
-        modifier = modifier,
-        contentPadding = contentPadding,
-    ) {
-        items(
-            items = airports,
-            key = { airport -> airport.id }
-        ) { airport ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(30.dp)
-                    .clickable(enabled = true) {
-                        onSuggestionClick.invoke(airport)
-                    }
-            ) {
-                Text(
-                    text = airport.iataCode,
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.width(50.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = airport.name,
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Light
-                )
+    if (airports.isEmpty()) {
+        Text(
+            text = stringResource(
+                R.string.no_airport_found,
+                query.uppercase(Locale.getDefault())
+            ),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold
+        )
+    } else {
+        LazyColumn(
+            modifier = modifier,
+            contentPadding = contentPadding,
+        ) {
+            items(
+                items = airports,
+                key = { airport -> airport.id }
+            ) { airport ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(30.dp)
+                        .clickable(enabled = true) {
+                            onSuggestionClick.invoke(airport)
+                        }
+                ) {
+                    Text(
+                        text = airport.iataCode,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.width(50.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = airport.name,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Light
+                    )
+                }
             }
         }
     }
@@ -446,7 +485,8 @@ fun SuggestionListPreview() {
                     123123
                 )
             },
-            onSuggestionClick = {}
+            onSuggestionClick = {},
+            query = "lia"
         )
     }
 }

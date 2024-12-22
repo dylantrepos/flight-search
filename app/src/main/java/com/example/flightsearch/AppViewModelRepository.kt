@@ -21,7 +21,7 @@ object AppViewModelProvider {
 
 /**
  * Extension function to queries for [Application] object and returns an instance of
- * [InventoryApplication].
+ * [FlightSearchApplication].
  */
 fun CreationExtras.flightSearchApplication(): FlightSearchApplication =
     (this[AndroidViewModelFactory.APPLICATION_KEY] as FlightSearchApplication)

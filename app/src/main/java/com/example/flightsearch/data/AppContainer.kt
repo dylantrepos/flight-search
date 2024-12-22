@@ -11,7 +11,7 @@ interface AppContainer {
 
 class AppDataContainer(private val context: Context) : AppContainer {
     /**
-     * Implementation for [ItemsRepository]
+     * Implementation for [FlightRepository]
      */
     override val flightRepository: FlightRepository by lazy {
         FlightRepository(AppDatabase.getDatabase(context).airportDao())

@@ -5,6 +5,7 @@ import com.example.flightsearch.data.AppContainer
 import com.example.flightsearch.data.AppDataContainer
 import com.example.flightsearch.data.AppDatabase
 
+
 class FlightSearchApplication : Application() {
     /**
      * AppContainer instance used by the rest of classes to obtain dependencies

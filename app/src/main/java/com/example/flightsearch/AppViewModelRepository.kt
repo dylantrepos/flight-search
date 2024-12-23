@@ -6,6 +6,7 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.flightsearch.data.FlightRepository
+import com.example.flightsearch.data.SearchHistoryRepository
 import com.example.flightsearch.ui.AirportViewModel
 
 object AppViewModelProvider {
@@ -14,7 +15,8 @@ object AppViewModelProvider {
             val application = flightSearchApplication()
             val airportDao = application.database.airportDao()
             val flightRepository = FlightRepository(airportDao)
-            AirportViewModel(flightRepository)
+            val searchHistoryRepository = SearchHistoryRepository(application)
+            AirportViewModel(flightRepository, searchHistoryRepository)
         }
     }
 }

@@ -3,7 +3,7 @@ package com.example.flightsearch.data
 import kotlinx.coroutines.flow.Flow
 
 class FlightRepository(
-    private val airportDao: AirportDao
+    private val airportDao: AirportDao,
 ) {
     fun fetchAllAirports(): Flow<List<Airport>> = airportDao.fetchAllAirports()
 

@@ -49,7 +49,6 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -78,6 +77,8 @@ fun FlightSearchApp(
         val query by viewModel.query.collectAsState()
         val airportTimetable by viewModel.airportTimetable.collectAsState()
         val favorites by viewModel.favorites.collectAsState()
+        val searchHistory by viewModel.searchHistoryAirports.collectAsState()
+
 
         Scaffold(
             topBar = {
@@ -100,8 +101,10 @@ fun FlightSearchApp(
                 favorites = favorites,
                 onQueryChange = viewModel::updateQuery,
                 onSelectAirport = viewModel::generateTimetable,
+                onClearSearchHistory = viewModel::removeSearchRepository,
                 timetable = airportTimetable,
                 modifier = Modifier.fillMaxSize(),
+                searchHistory = searchHistory,
                 toggleFavorite = { favorite ->
                     viewModel.viewModelScope.launch {
                         viewModel.toggleFavorite(favorite)
@@ -113,7 +116,6 @@ fun FlightSearchApp(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     airports: List<Airport>,
@@ -122,11 +124,12 @@ fun HomeScreen(
     timetable: List<AirportTimetable>,
     favorites: List<AirportTimetable>,
     toggleFavorite: (Favorite) -> Unit,
+    searchHistory: List<Airport>,
+    onClearSearchHistory: (Airport) -> Unit,
     onQueryChange: (String) -> Unit,
     onSelectAirport: (Airport) -> Unit,
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
-    val layoutDirection = LocalLayoutDirection.current
     var isFocused by remember { mutableStateOf(false) }
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
@@ -193,6 +196,7 @@ fun HomeScreen(
                     focusManager.clearFocus()
                 })
             )
+
             if (query.isNotEmpty() && !isFocused && timetable.isNotEmpty()) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -216,14 +220,26 @@ fun HomeScreen(
                     )
                 }
             }
-            if (isFocused || query.isNotEmpty()) {
+
+            if (isFocused && query.isEmpty()) {
+                SearchHistoryList(
+                    searchHistoryList = searchHistory,
+                    onSearchHistory = {
+                        focusManager.clearFocus()
+                        onQueryChange(it.iataCode)
+                        onSelectAirport(it)
+                    },
+                    onClearSearchHistory = onClearSearchHistory
+                )
+            } else if (isFocused || query.isNotEmpty()) {
                 if (query.isNotEmpty() && timetable.isEmpty()) {
                     SuggestionList(
                         airports = airports,
                         query,
                         onSuggestionClick = {
-                            onSelectAirport(it)
                             focusManager.clearFocus()
+                            onQueryChange(it.iataCode)
+                            onSelectAirport(it)
                         },
                         modifier = Modifier.background(MaterialTheme.colorScheme.background)
                     )
@@ -250,8 +266,8 @@ fun TimetableList(
     timetable: List<AirportTimetable>,
     isFavorite: Boolean = false,
     onSave: (Favorite) -> Unit,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
     modifier: Modifier = Modifier,
-    contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
     if (isFavorite) {
         Text(
@@ -420,6 +436,64 @@ fun SuggestionList(
     }
 }
 
+@Composable
+fun SearchHistoryList(
+    searchHistoryList: List<Airport>,
+    onSearchHistory: (Airport) -> Unit,
+    onClearSearchHistory: (Airport) -> Unit,
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
+) {
+    Text(
+        text = stringResource(R.string.recently_searched),
+        style = MaterialTheme.typography.bodyMedium,
+        fontWeight = FontWeight.Bold
+    )
+    LazyColumn(
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        items(
+            items = searchHistoryList,
+            key = { airport -> airport.id }
+        ) { airport ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(30.dp)
+                    .clickable(enabled = true) {
+                        onSearchHistory.invoke(airport)
+                    }
+            ) {
+                Text(
+                    text = airport.iataCode,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = airport.name,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Light,
+                )
+                Spacer(Modifier.weight(1f))
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                    modifier = Modifier
+                        .width(20.dp)
+                        .height(20.dp)
+                        .clickable {
+                            onClearSearchHistory(airport)
+                        }
+                )
+            }
+        }
+    }
+
+}
+
 @Preview(showBackground = true)
 @Composable
 fun TimetableListPreview() {
@@ -510,6 +584,8 @@ fun HomeScreenPreview() {
             favorites = listOf(),
             toggleFavorite = {},
             timetable = emptyList(),
+            searchHistory = emptyList(),
+            onClearSearchHistory = {}
         )
     }
 }
@@ -533,6 +609,8 @@ fun HomeScreenDarkPreview() {
             favorites = listOf(),
             toggleFavorite = {},
             timetable = emptyList(),
+            searchHistory = emptyList(),
+            onClearSearchHistory = {}
         )
     }
 }

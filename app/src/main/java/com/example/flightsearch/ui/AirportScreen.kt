@@ -221,24 +221,22 @@ fun HomeScreen(
                 }
             }
 
-            if (isFocused && query.isEmpty()) {
+            if (isFocused && query.isEmpty() && searchHistory.isNotEmpty()) {
                 SearchHistoryList(
                     searchHistoryList = searchHistory,
                     onSearchHistory = {
                         focusManager.clearFocus()
-                        onQueryChange(it.iataCode)
                         onSelectAirport(it)
                     },
                     onClearSearchHistory = onClearSearchHistory
                 )
             } else if (isFocused || query.isNotEmpty()) {
-                if (query.isNotEmpty() && timetable.isEmpty()) {
+                if (isFocused && query.isNotEmpty() && timetable.isEmpty()) {
                     SuggestionList(
                         airports = airports,
                         query,
                         onSuggestionClick = {
                             focusManager.clearFocus()
-                            onQueryChange(it.iataCode)
                             onSelectAirport(it)
                         },
                         modifier = Modifier.background(MaterialTheme.colorScheme.background)
@@ -269,7 +267,7 @@ fun TimetableList(
     contentPadding: PaddingValues = PaddingValues(0.dp),
     modifier: Modifier = Modifier,
 ) {
-    if (isFavorite) {
+    if (isFavorite && timetable.isNotEmpty()) {
         Text(
             text = "My flights",
             style = MaterialTheme.typography.bodyMedium,

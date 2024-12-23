@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -34,10 +35,11 @@ class AirportViewModel(
     @OptIn(ExperimentalCoroutinesApi::class)
     val airports: StateFlow<List<Airport>> = _query
         .flatMapLatest { query ->
-            if (query.isEmpty()) {
+            if (query.isNotEmpty()) {
                 fetchAllAirports()
-            } else {
                 flightRepository.getAirportTimetable("%$query%")
+            } else {
+                flowOf(emptyList())
             }
         }
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
@@ -46,7 +48,7 @@ class AirportViewModel(
     val searchHistoryAirports: StateFlow<List<Airport>> = _searchHistory
         .flatMapLatest { history ->
             if (history.isEmpty()) {
-                fetchAllAirports()
+                flowOf(emptyList())
             } else {
                 val airportFlows = history.map { iataCode ->
                     flightRepository.getAirportDetails(iataCode)
@@ -72,6 +74,7 @@ class AirportViewModel(
     }
 
     fun generateTimetable(airport: Airport) {
+        _query.value = airport.iataCode
         viewModelScope.launch {
             val airportList = fetchAllAirports().firstOrNull() ?: emptyList()
             _airportTimetable.value = airportList.mapNotNull { arrival ->

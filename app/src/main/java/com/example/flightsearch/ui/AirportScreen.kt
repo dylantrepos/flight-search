@@ -55,6 +55,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -204,7 +205,9 @@ fun HomeScreen(
                     .fillMaxWidth()
                     .onFocusChanged { focusState ->
                         isFocused = focusState.isFocused
-                    },
+                    }
+                    .zIndex(1f), // Set zIndex to 1
+
                 colors = TextFieldDefaults.colors(
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
@@ -279,15 +282,18 @@ fun HomeScreen(
                 }
             } else if (query.isEmpty() && timetable.isEmpty() && favorites.isEmpty()) {
                 var startAnimation by remember { mutableStateOf(false) }
+                val screenHeight = LocalConfiguration.current.screenHeightDp.dp
                 val topOffset by animateDpAsState(
-                    targetValue = if (startAnimation) -1000.dp else 1000.dp,
+                    targetValue = if (startAnimation) 0.dp else -screenHeight,
                     animationSpec = infiniteRepeatable(
                         animation = keyframes {
-                            durationMillis = 6000
-                            1000.dp at 0 using EaseInOut
-                            -100.dp at 2000 using EaseInOut
-                            -1000.dp at 4000 using EaseInOut
+                            durationMillis = 10000 // Increased duration to slow down the animation
+                            screenHeight at 0 using EaseInOut
+                            -70.dp at 4000 using EaseInOut // Adjusted timing to match the new duration
+                            -70.dp at 6000 using EaseInOut // Adjusted timing to match the new duration
+                            -screenHeight at 10000 using EaseInOut
                         },
+                        repeatMode = RepeatMode.Restart
                     )
                 )
 
@@ -302,7 +308,6 @@ fun HomeScreen(
                         modifier = Modifier
                             .offset(y = topOffset)
                             .zIndex(-1f) // Set zIndex to -1
-
 //                            .align(Alignment.CenterHorizontally)
                     )
                     {
@@ -317,7 +322,10 @@ fun HomeScreen(
                         )
                     }
                     Box(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .zIndex(1f), // Set zIndex to 1
+
                         contentAlignment = Alignment.Center
                     ) {
 

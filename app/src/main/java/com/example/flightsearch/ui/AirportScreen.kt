@@ -2,7 +2,11 @@ package com.example.flightsearch.ui
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.EaseInOut
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,6 +19,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -37,10 +42,12 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,6 +63,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.compose.FlightSearchTheme
@@ -75,10 +83,10 @@ fun FlightSearchApp(
     FlightSearchTheme {
         val airports by viewModel.airports.collectAsState()
         val query by viewModel.query.collectAsState()
+        val searchQuery by viewModel.searchQuery.collectAsState()
         val airportTimetable by viewModel.airportTimetable.collectAsState()
         val favorites by viewModel.favorites.collectAsState()
         val searchHistory by viewModel.searchHistoryAirports.collectAsState()
-
 
         Scaffold(
             topBar = {
@@ -98,8 +106,10 @@ fun FlightSearchApp(
             HomeScreen(
                 airports = airports,
                 query = query,
+                searchQuery = searchQuery,
                 favorites = favorites,
                 onQueryChange = viewModel::updateQuery,
+                onSearchQueryChange = viewModel::updateSearchQuery,
                 onSelectAirport = viewModel::generateTimetable,
                 onClearSearchHistory = viewModel::removeSearchRepository,
                 timetable = airportTimetable,
@@ -119,6 +129,7 @@ fun FlightSearchApp(
 @Composable
 fun HomeScreen(
     airports: List<Airport>,
+    searchQuery: String,
     query: String,
     modifier: Modifier = Modifier,
     timetable: List<AirportTimetable>,
@@ -127,12 +138,28 @@ fun HomeScreen(
     searchHistory: List<Airport>,
     onClearSearchHistory: (Airport) -> Unit,
     onQueryChange: (String) -> Unit,
+    onSearchQueryChange: (String) -> Unit,
     onSelectAirport: (Airport) -> Unit,
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     var isFocused by remember { mutableStateOf(false) }
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
+
+    val rotation = remember { androidx.compose.animation.core.Animatable(45f) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        scope.launch {
+            rotation.animateTo(
+                targetValue = 0f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(2000),
+                    repeatMode = RepeatMode.Reverse
+                )
+            )
+        }
+    }
 
     Box(
         modifier = modifier
@@ -145,11 +172,11 @@ fun HomeScreen(
         ) {
             TextField(
                 value = query,
-                onValueChange = onQueryChange,
+                onValueChange = onSearchQueryChange,
                 placeholder = {
                     Text(
                         text = stringResource(R.string.search_placeholder),
-                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = .5f)
                     )
                 },
                 leadingIcon = {
@@ -167,7 +194,7 @@ fun HomeScreen(
                             tint = MaterialTheme.colorScheme.onTertiaryContainer,
                             modifier = Modifier
                                 .clickable {
-                                    onQueryChange("")
+                                    onSearchQueryChange("")
                                 }
                         )
                     }
@@ -184,7 +211,7 @@ fun HomeScreen(
                     unfocusedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
                     focusedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
                     focusedTextColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onTertiaryContainer
+                    unfocusedTextColor = MaterialTheme.colorScheme.onTertiaryContainer,
                 ),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions.Default.copy(
@@ -226,6 +253,7 @@ fun HomeScreen(
                     searchHistoryList = searchHistory,
                     onSearchHistory = {
                         focusManager.clearFocus()
+                        onQueryChange(it.iataCode)
                         onSelectAirport(it)
                     },
                     onClearSearchHistory = onClearSearchHistory
@@ -237,6 +265,7 @@ fun HomeScreen(
                         query,
                         onSuggestionClick = {
                             focusManager.clearFocus()
+                            onQueryChange(it.iataCode)
                             onSelectAirport(it)
                         },
                         modifier = Modifier.background(MaterialTheme.colorScheme.background)
@@ -247,6 +276,80 @@ fun HomeScreen(
                         isFavorite = query.isEmpty(),
                         onSave = toggleFavorite,
                     )
+                }
+            } else if (query.isEmpty() && timetable.isEmpty() && favorites.isEmpty()) {
+                var startAnimation by remember { mutableStateOf(false) }
+                val topOffset by animateDpAsState(
+                    targetValue = if (startAnimation) -1000.dp else 1000.dp,
+                    animationSpec = infiniteRepeatable(
+                        animation = keyframes {
+                            durationMillis = 6000
+                            1000.dp at 0 using EaseInOut
+                            -100.dp at 2000 using EaseInOut
+                            -1000.dp at 4000 using EaseInOut
+                        },
+                    )
+                )
+
+                LaunchedEffect(Unit) {
+                    startAnimation = true
+                }
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .offset(y = topOffset)
+                            .zIndex(-1f) // Set zIndex to -1
+
+//                            .align(Alignment.CenterHorizontally)
+                    )
+                    {
+                        Icon(
+                            imageVector = Icons.Outlined.AirplanemodeActive,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.surfaceTint,
+                            modifier = Modifier
+                                .width(50.dp)
+                                .height(50.dp)
+//                                .graphicsLayer(rotationZ = rotation.value)
+                        )
+                    }
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+//                    Icon(
+//                        imageVector = Icons.Outlined.AirplanemodeActive,
+//                        contentDescription = null,
+//                        tint = MaterialTheme.colorScheme.surfaceTint,
+//                        modifier = Modifier
+//                            .width(50.dp)
+//                            .height(50.dp)
+//                            .graphicsLayer(rotationZ = rotation.value)
+//                    )
+                            Spacer(modifier = Modifier.height(0.dp))
+                            Text(
+                                text = "Where are you going ?",
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = stringResource(R.string.start_search_airport),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Light
+                            )
+                        }
+                    }
                 }
             } else {
                 TimetableList(
@@ -400,7 +503,7 @@ fun SuggestionList(
         )
     } else {
         LazyColumn(
-            modifier = modifier,
+            modifier = modifier.fillMaxWidth(),
             contentPadding = contentPadding,
         ) {
             items(
@@ -440,7 +543,6 @@ fun SearchHistoryList(
     onSearchHistory: (Airport) -> Unit,
     onClearSearchHistory: (Airport) -> Unit,
     modifier: Modifier = Modifier,
-    contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     Text(
         text = stringResource(R.string.recently_searched),
@@ -467,6 +569,7 @@ fun SearchHistoryList(
                     text = airport.iataCode,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
+                    modifier = Modifier.width(50.dp)
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
@@ -478,10 +581,10 @@ fun SearchHistoryList(
                 Icon(
                     Icons.Default.Close,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                    tint = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = .5f),
                     modifier = Modifier
-                        .width(20.dp)
-                        .height(20.dp)
+                        .width(15.dp)
+                        .height(15.dp)
                         .clickable {
                             onClearSearchHistory(airport)
                         }
@@ -583,7 +686,9 @@ fun HomeScreenPreview() {
             toggleFavorite = {},
             timetable = emptyList(),
             searchHistory = emptyList(),
-            onClearSearchHistory = {}
+            onClearSearchHistory = {},
+            searchQuery = "",
+            onSearchQueryChange = { },
         )
     }
 }
@@ -608,7 +713,9 @@ fun HomeScreenDarkPreview() {
             toggleFavorite = {},
             timetable = emptyList(),
             searchHistory = emptyList(),
-            onClearSearchHistory = {}
+            onClearSearchHistory = {},
+            searchQuery = "",
+            onSearchQueryChange = { },
         )
     }
 }

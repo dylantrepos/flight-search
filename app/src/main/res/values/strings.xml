@@ -1,9 +1,10 @@
 <resources>
-    <string name="app_name">Flight Search</string>
-    <string name="search_placeholder">Enter departure airport…</string>
+    <string name="app_name">Air You There</string>
+    <string name="search_placeholder">Enter an airport…</string>
     <string name="flights_from">Flights from %1$s</string>
     <string name="no_airport_found">No airport found for %1$s</string>
     <string name="departure">Departure</string>
     <string name="arrival">Arrival</string>
     <string name="recently_searched">Recently searched</string>
+    <string name="start_search_airport">Start by searching an airport…</string>
 </resources>

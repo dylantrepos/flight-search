@@ -1,5 +1,6 @@
 package com.example.flightsearch.ui
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.RepeatMode
@@ -10,6 +11,7 @@ import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -95,7 +97,6 @@ fun FlightSearchApp(
                     title = {
                         Text(
                             text = stringResource(R.string.app_name),
-                            color = MaterialTheme.colorScheme.onPrimary
                         )
                     },
                     colors = TopAppBarDefaults.largeTopAppBarColors(
@@ -127,6 +128,7 @@ fun FlightSearchApp(
     }
 }
 
+@SuppressLint("RememberReturnType")
 @Composable
 fun HomeScreen(
     airports: List<Airport>,
@@ -147,15 +149,39 @@ fun HomeScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
 
-    val rotation = remember { androidx.compose.animation.core.Animatable(45f) }
+    val rotation = remember { androidx.compose.animation.core.Animatable(0f) }
     val scope = rememberCoroutineScope()
+    val interactionSource = remember { MutableInteractionSource() }
+
+
+    var startAnimation by remember { mutableStateOf(false) }
+    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+    val topOffset by animateDpAsState(
+        targetValue = if (startAnimation) 0.dp else -screenHeight,
+        animationSpec = infiniteRepeatable(
+            animation = keyframes {
+                durationMillis = 10000 // Increased duration to slow down the animation
+                screenHeight at 0 using EaseInOut
+                -70.dp at 4000 using EaseInOut // Adjusted timing to match the new duration
+                -70.dp at 6000 using EaseInOut // Adjusted timing to match the new duration
+                -screenHeight at 10000 using EaseInOut
+            },
+            repeatMode = RepeatMode.Restart
+        )
+    )
 
     LaunchedEffect(Unit) {
         scope.launch {
             rotation.animateTo(
-                targetValue = 0f,
+                targetValue = 360f,
                 animationSpec = infiniteRepeatable(
-                    animation = tween(2000),
+                    animation = keyframes {
+                        durationMillis = 10000 // Increased duration to slow down the animation
+                        0f at 0 using EaseInOut
+                        360f at 4000 using EaseInOut // Adjusted timing to match the new duration
+                        360f at 6000 using EaseInOut // Adjusted timing to match the new duration
+                        0f at 10000 using EaseInOut
+                    },
                     repeatMode = RepeatMode.Reverse
                 )
             )
@@ -165,7 +191,11 @@ fun HomeScreen(
     Box(
         modifier = modifier
             .padding(contentPadding)
-            .clickable { focusManager.clearFocus() }
+            .clickable(
+                onClick = { focusManager.clearFocus() },
+                interactionSource = interactionSource,
+                indication = null
+            ),
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(20.dp),
@@ -177,14 +207,15 @@ fun HomeScreen(
                 placeholder = {
                     Text(
                         text = stringResource(R.string.search_placeholder),
-                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = .5f)
+                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = .5f),
                     )
                 },
                 leadingIcon = {
                     Icon(
                         Icons.Default.Search,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onTertiaryContainer
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                        modifier = Modifier.padding(start = 20.dp)
                     )
                 },
                 trailingIcon = {
@@ -215,7 +246,8 @@ fun HomeScreen(
                     focusedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
                     focusedTextColor = MaterialTheme.colorScheme.onTertiaryContainer,
                     unfocusedTextColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                ),
+
+                    ),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions.Default.copy(
                     keyboardType = KeyboardType.Text,
@@ -281,34 +313,20 @@ fun HomeScreen(
                     )
                 }
             } else if (query.isEmpty() && timetable.isEmpty() && favorites.isEmpty()) {
-                var startAnimation by remember { mutableStateOf(false) }
-                val screenHeight = LocalConfiguration.current.screenHeightDp.dp
-                val topOffset by animateDpAsState(
-                    targetValue = if (startAnimation) 0.dp else -screenHeight,
-                    animationSpec = infiniteRepeatable(
-                        animation = keyframes {
-                            durationMillis = 10000 // Increased duration to slow down the animation
-                            screenHeight at 0 using EaseInOut
-                            -70.dp at 4000 using EaseInOut // Adjusted timing to match the new duration
-                            -70.dp at 6000 using EaseInOut // Adjusted timing to match the new duration
-                            -screenHeight at 10000 using EaseInOut
-                        },
-                        repeatMode = RepeatMode.Restart
-                    )
-                )
 
                 LaunchedEffect(Unit) {
                     startAnimation = true
                 }
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     Box(
                         modifier = Modifier
                             .offset(y = topOffset)
                             .zIndex(-1f) // Set zIndex to -1
-//                            .align(Alignment.CenterHorizontally)
+//                            .graphicsLayer(rotationY = if (topOffset > -70.dp) rotation.value else 0f)
                     )
                     {
                         Icon(
@@ -318,7 +336,7 @@ fun HomeScreen(
                             modifier = Modifier
                                 .width(50.dp)
                                 .height(50.dp)
-//                                .graphicsLayer(rotationZ = rotation.value)
+                                .graphicsLayer(rotationY = if (topOffset > (-70).dp) rotation.value else 0f)
                         )
                     }
                     Box(
@@ -335,15 +353,6 @@ fun HomeScreen(
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-//                    Icon(
-//                        imageVector = Icons.Outlined.AirplanemodeActive,
-//                        contentDescription = null,
-//                        tint = MaterialTheme.colorScheme.surfaceTint,
-//                        modifier = Modifier
-//                            .width(50.dp)
-//                            .height(50.dp)
-//                            .graphicsLayer(rotationZ = rotation.value)
-//                    )
                             Spacer(modifier = Modifier.height(0.dp))
                             Text(
                                 text = "Where are you going ?",
@@ -396,13 +405,13 @@ fun TimetableList(
         ) { flight ->
             var isStarred by remember { mutableStateOf(flight.isFavorite) }
             val animatedTint by animateColorAsState(
-                targetValue = if (isStarred) Color(0xFFFFD700) else Color.LightGray,
-                animationSpec = tween(durationMillis = 1000) // Adjust duration as needed
+                targetValue = if (isStarred) Color(0xFFFFD700) else MaterialTheme.colorScheme.onPrimaryContainer,
+                animationSpec = tween(durationMillis = 500) // Adjust duration as needed
             )
 
             val scale by animateFloatAsState(
                 targetValue = if (isStarred) 1.1f else 1f,
-                animationSpec = tween(250, easing = EaseInOut)
+                animationSpec = tween(1000, easing = EaseInOut)
             )
 
             Row(

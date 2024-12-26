@@ -1,14 +1,13 @@
 package com.example.flightsearch.ui
 
 import android.annotation.SuppressLint
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.keyframes
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -26,21 +25,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.AirplanemodeActive
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -53,18 +44,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewModelScope
@@ -75,6 +62,10 @@ import com.example.flightsearch.R
 import com.example.flightsearch.data.Airport
 import com.example.flightsearch.data.AirportTimetable
 import com.example.flightsearch.data.Favorite
+import com.example.flightsearch.ui.components.SearchBarItem
+import com.example.flightsearch.ui.components.SearchHistoryList
+import com.example.flightsearch.ui.components.SuggestionList
+import com.example.flightsearch.ui.components.TimeTableItem
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -149,7 +140,7 @@ fun HomeScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
 
-    val rotation = remember { androidx.compose.animation.core.Animatable(0f) }
+    val rotation = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
     val interactionSource = remember { MutableInteractionSource() }
 
@@ -201,65 +192,21 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp),
             modifier = Modifier.padding(20.dp)
         ) {
-            TextField(
-                value = query,
-                onValueChange = onSearchQueryChange,
-                placeholder = {
-                    Text(
-                        text = stringResource(R.string.search_placeholder),
-                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = .5f),
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Search,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                        modifier = Modifier.padding(start = 20.dp)
-                    )
-                },
-                trailingIcon = {
-                    if (query.isNotEmpty()) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                            modifier = Modifier
-                                .clickable {
-                                    onSearchQueryChange("")
-                                }
-                        )
-                    }
-                },
-                shape = RoundedCornerShape(100),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .onFocusChanged { focusState ->
-                        isFocused = focusState.isFocused
-                    }
-                    .zIndex(1f), // Set zIndex to 1
-
-                colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                    focusedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                    focusedTextColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onTertiaryContainer,
-
-                    ),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions.Default.copy(
-                    keyboardType = KeyboardType.Text,
-                    imeAction = ImeAction.Done
-                ),
-                keyboardActions = KeyboardActions(onDone = {
-                    keyboardController?.hide()
-                    focusManager.clearFocus()
-                })
+            SearchBarItem(
+                query = query,
+                onSearchQueryChange = onSearchQueryChange,
+                onFocusChange = { isFocused = it },
+                focusManager = focusManager,
             )
 
-            if (query.isNotEmpty() && !isFocused && timetable.isNotEmpty()) {
+            val showFlightsFrom = query.isNotEmpty() && !isFocused && timetable.isNotEmpty()
+            val showSearchHistory = isFocused && query.isEmpty() && searchHistory.isNotEmpty()
+            val showSuggestions = isFocused && query.isNotEmpty()
+            val showTimetable = !isFocused && query.isNotEmpty()
+            val showEmptyState = query.isEmpty() && timetable.isEmpty() && favorites.isEmpty()
+
+
+            if (showFlightsFrom) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(5.dp),
@@ -283,7 +230,7 @@ fun HomeScreen(
                 }
             }
 
-            if (isFocused && query.isEmpty() && searchHistory.isNotEmpty()) {
+            if (showSearchHistory) {
                 SearchHistoryList(
                     searchHistoryList = searchHistory,
                     onSearchHistory = {
@@ -294,10 +241,10 @@ fun HomeScreen(
                     onClearSearchHistory = onClearSearchHistory
                 )
             } else if (isFocused || query.isNotEmpty()) {
-                if (isFocused && query.isNotEmpty() && timetable.isEmpty()) {
+                if (showSuggestions) {
                     SuggestionList(
                         airports = airports,
-                        query,
+                        query = query,
                         onSuggestionClick = {
                             focusManager.clearFocus()
                             onQueryChange(it.iataCode)
@@ -309,70 +256,78 @@ fun HomeScreen(
                     TimetableList(
                         timetable = if (query.isEmpty()) favorites else timetable,
                         isFavorite = query.isEmpty(),
-                        onSave = toggleFavorite,
+                        onSave = toggleFavorite
                     )
                 }
-            } else if (query.isEmpty() && timetable.isEmpty() && favorites.isEmpty()) {
-
-                LaunchedEffect(Unit) {
-                    startAnimation = true
-                }
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .offset(y = topOffset)
-                            .zIndex(-1f) // Set zIndex to -1
-//                            .graphicsLayer(rotationY = if (topOffset > -70.dp) rotation.value else 0f)
-                    )
-                    {
-                        Icon(
-                            imageVector = Icons.Outlined.AirplanemodeActive,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.surfaceTint,
-                            modifier = Modifier
-                                .width(50.dp)
-                                .height(50.dp)
-                                .graphicsLayer(rotationY = if (topOffset > (-70).dp) rotation.value else 0f)
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .zIndex(1f), // Set zIndex to 1
-
-                        contentAlignment = Alignment.Center
-                    ) {
-
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Spacer(modifier = Modifier.height(0.dp))
-                            Text(
-                                text = "Where are you going ?",
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Text(
-                                text = stringResource(R.string.start_search_airport),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Light
-                            )
-                        }
-                    }
-                }
+            } else if (showEmptyState) {
+                DisplayEmptyState(
+                    updateStartAnimation = { startAnimation = it },
+                    topOffset = topOffset,
+                    rotation = rotation
+                )
             } else {
                 TimetableList(
                     timetable = if (query.isEmpty()) favorites else timetable,
                     isFavorite = query.isEmpty(),
-                    onSave = toggleFavorite,
+                    onSave = toggleFavorite
+                )
+            }
+
+        }
+    }
+}
+
+
+@Composable
+fun DisplayEmptyState(
+    updateStartAnimation: (Boolean) -> Unit,
+    topOffset: Dp,
+    rotation: Animatable<Float, AnimationVector1D>
+) {
+    LaunchedEffect(Unit) {
+        updateStartAnimation(true)
+    }
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .offset(y = topOffset)
+                .zIndex(-1f)
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.AirplanemodeActive,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.surfaceTint,
+                modifier = Modifier
+                    .width(50.dp)
+                    .height(50.dp)
+                    .graphicsLayer(rotationY = if (topOffset > (-70).dp) rotation.value else 0f)
+            )
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.height(0.dp))
+                Text(
+                    text = "Where are you going ?",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = stringResource(R.string.start_search_airport),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Light
                 )
             }
         }
@@ -403,285 +358,16 @@ fun TimetableList(
             items = timetable,
             key = { flight -> "${flight.departure.iataCode}-${flight.arrival.iataCode}" }
         ) { flight ->
-            var isStarred by remember { mutableStateOf(flight.isFavorite) }
-            val animatedTint by animateColorAsState(
-                targetValue = if (isStarred) Color(0xFFFFD700) else MaterialTheme.colorScheme.onPrimaryContainer,
-                animationSpec = tween(durationMillis = 500) // Adjust duration as needed
+            TimeTableItem(
+                departure = flight.departure,
+                arrival = flight.arrival,
+                isFavorite = flight.isFavorite,
+                onClickFavorite = onSave
             )
-
-            val scale by animateFloatAsState(
-                targetValue = if (isStarred) 1.1f else 1f,
-                animationSpec = tween(1000, easing = EaseInOut)
-            )
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(MaterialTheme.colorScheme.secondaryContainer)
-                    .clickable {
-                        isStarred = !isStarred
-                        onSave(
-                            Favorite(
-                                departureCode = flight.departure.iataCode,
-                                destinationCode = flight.arrival.iataCode
-                            )
-                        )
-                    }
-                    .padding(20.dp)
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        stringResource(R.string.departure).uppercase(Locale.getDefault()),
-                        fontWeight = FontWeight.Light,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-
-                    Spacer(Modifier.height(2.dp))
-                    Row {
-                        Text(
-                            flight.departure.iataCode,
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                        Spacer(Modifier.width(5.dp))
-                        Text(
-                            flight.departure.name,
-                            fontWeight = FontWeight.Light,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    }
-                    Spacer(Modifier.height(10.dp))
-
-                    Text(
-                        stringResource(R.string.arrival).uppercase(Locale.getDefault()),
-                        fontWeight = FontWeight.Light,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                    Spacer(Modifier.height(2.dp))
-                    Row {
-                        Text(
-                            flight.arrival.iataCode,
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                        Spacer(Modifier.width(5.dp))
-                        Text(
-                            flight.arrival.name,
-                            fontWeight = FontWeight.Light,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    }
-                }
-                Icon(
-                    imageVector = Icons.Filled.Star,
-                    contentDescription = null,
-                    tint = animatedTint,
-                    modifier = Modifier
-                        .width(30.dp)
-                        .height(30.dp)
-                        .graphicsLayer(
-                            scaleX = scale,
-                            scaleY = scale
-                        )
-                )
-            }
         }
     }
 }
 
-
-@Composable
-fun SuggestionList(
-    airports: List<Airport>,
-    query: String,
-    onSuggestionClick: (Airport) -> Unit,
-    modifier: Modifier = Modifier,
-    contentPadding: PaddingValues = PaddingValues(0.dp),
-) {
-    if (airports.isEmpty()) {
-        Text(
-            text = stringResource(
-                R.string.no_airport_found,
-                query.uppercase(Locale.getDefault())
-            ),
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold
-        )
-    } else {
-        LazyColumn(
-            modifier = modifier.fillMaxWidth(),
-            contentPadding = contentPadding,
-        ) {
-            items(
-                items = airports,
-                key = { airport -> airport.id }
-            ) { airport ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(30.dp)
-                        .clickable(enabled = true) {
-                            onSuggestionClick.invoke(airport)
-                        }
-                ) {
-                    Text(
-                        text = airport.iataCode,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.width(50.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = airport.name,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Light
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun SearchHistoryList(
-    searchHistoryList: List<Airport>,
-    onSearchHistory: (Airport) -> Unit,
-    onClearSearchHistory: (Airport) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Text(
-        text = stringResource(R.string.recently_searched),
-        style = MaterialTheme.typography.bodyMedium,
-        fontWeight = FontWeight.Bold
-    )
-    LazyColumn(
-        modifier = modifier.fillMaxWidth(),
-    ) {
-        items(
-            items = searchHistoryList,
-            key = { airport -> airport.id }
-        ) { airport ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(30.dp)
-                    .clickable(enabled = true) {
-                        onSearchHistory.invoke(airport)
-                    }
-            ) {
-                Text(
-                    text = airport.iataCode,
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.width(50.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = airport.name,
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Light,
-                )
-                Spacer(Modifier.weight(1f))
-                Icon(
-                    Icons.Default.Close,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = .5f),
-                    modifier = Modifier
-                        .width(15.dp)
-                        .height(15.dp)
-                        .clickable {
-                            onClearSearchHistory(airport)
-                        }
-                )
-            }
-        }
-    }
-
-}
-
-@Preview(showBackground = true)
-@Composable
-fun TimetableListPreview() {
-    FlightSearchTheme {
-        TimetableList(
-            timetable = List(3) { index ->
-                AirportTimetable(
-                    departure = Airport(
-                        0,
-                        "Paris airport",
-                        "CDG$index",
-                        123123
-                    ),
-                    arrival = Airport(
-                        1,
-                        "Los Angeles airport",
-                        "LAX$index",
-                        123123
-                    )
-                )
-            },
-            onSave = {},
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun TimetableListDarkPreview() {
-    FlightSearchTheme(darkTheme = true) {
-        TimetableList(
-            timetable = List(3) { index ->
-                AirportTimetable(
-                    departure = Airport(
-                        0,
-                        "Paris airport",
-                        "CDG$index",
-                        123123
-                    ),
-                    arrival = Airport(
-                        1,
-                        "Los Angeles airport",
-                        "LAX$index",
-                        123123
-                    )
-                )
-            },
-            onSave = {},
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun SuggestionListPreview() {
-    FlightSearchTheme {
-        SuggestionList(
-            airports = List(3) { index ->
-                Airport(
-                    index,
-                    "lorem ipsum airport",
-                    "LIA",
-                    123123
-                )
-            },
-            onSuggestionClick = {},
-            query = "lia"
-        )
-    }
-}
 
 @Preview
 @Composable

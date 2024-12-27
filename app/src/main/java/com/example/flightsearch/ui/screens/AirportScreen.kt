@@ -47,7 +47,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -77,7 +76,6 @@ fun FlightSearchApp(
     FlightSearchTheme {
         val airports by viewModel.airports.collectAsState()
         val query by viewModel.query.collectAsState()
-        val searchQuery by viewModel.searchQuery.collectAsState()
         val airportTimetable by viewModel.airportTimetable.collectAsState()
         val favorites by viewModel.favorites.collectAsState()
         val searchHistory by viewModel.searchHistoryAirports.collectAsState()
@@ -99,10 +97,8 @@ fun FlightSearchApp(
             HomeScreen(
                 airports = airports,
                 query = query,
-                searchQuery = searchQuery,
                 favorites = favorites,
                 onQueryChange = viewModel::updateQuery,
-                onSearchQueryChange = viewModel::updateSearchQuery,
                 onSelectAirport = viewModel::generateTimetable,
                 onClearSearchHistory = viewModel::removeSearchRepository,
                 timetable = airportTimetable,
@@ -123,7 +119,6 @@ fun FlightSearchApp(
 @Composable
 fun HomeScreen(
     airports: List<Airport>,
-    searchQuery: String,
     query: String,
     modifier: Modifier = Modifier,
     timetable: List<AirportTimetable>,
@@ -132,12 +127,10 @@ fun HomeScreen(
     searchHistory: List<Airport>,
     onClearSearchHistory: (Airport) -> Unit,
     onQueryChange: (String) -> Unit,
-    onSearchQueryChange: (String) -> Unit,
     onSelectAirport: (Airport) -> Unit,
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     var isFocused by remember { mutableStateOf(false) }
-    val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
 
     val rotation = remember { Animatable(0f) }
@@ -194,7 +187,7 @@ fun HomeScreen(
         ) {
             SearchBarItem(
                 query = query,
-                onSearchQueryChange = onSearchQueryChange,
+                onQueryChange = onQueryChange,
                 onFocusChange = { isFocused = it },
                 focusManager = focusManager,
             )
@@ -335,10 +328,10 @@ fun DisplayEmptyState(
 @Composable
 fun TimetableList(
     timetable: List<AirportTimetable>,
-    isFavorite: Boolean = false,
     onSave: (Favorite) -> Unit,
-    contentPadding: PaddingValues = PaddingValues(0.dp),
     modifier: Modifier = Modifier,
+    isFavorite: Boolean = false,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     if (isFavorite && timetable.isNotEmpty()) {
         Text(
@@ -388,8 +381,6 @@ fun HomeScreenPreview() {
             timetable = emptyList(),
             searchHistory = emptyList(),
             onClearSearchHistory = {},
-            searchQuery = "",
-            onSearchQueryChange = { },
         )
     }
 }
@@ -415,8 +406,6 @@ fun HomeScreenDarkPreview() {
             timetable = emptyList(),
             searchHistory = emptyList(),
             onClearSearchHistory = {},
-            searchQuery = "",
-            onSearchQueryChange = { },
         )
     }
 }

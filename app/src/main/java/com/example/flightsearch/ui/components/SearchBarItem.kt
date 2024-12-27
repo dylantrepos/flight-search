@@ -30,7 +30,7 @@ import com.example.flightsearch.R
 @Composable
 fun SearchBarItem(
     query: String,
-    onSearchQueryChange: (String) -> Unit,
+    onQueryChange: (String) -> Unit,
     onFocusChange: (Boolean) -> Unit,
     focusManager: FocusManager,
     modifier: Modifier = Modifier
@@ -39,7 +39,7 @@ fun SearchBarItem(
 
     TextField(
         value = query,
-        onValueChange = onSearchQueryChange,
+        onValueChange = onQueryChange,
         placeholder = {
             Text(
                 text = stringResource(R.string.search_placeholder),
@@ -62,13 +62,13 @@ fun SearchBarItem(
                     tint = MaterialTheme.colorScheme.onTertiaryContainer,
                     modifier = Modifier
                         .clickable {
-                            onSearchQueryChange("")
+                            onQueryChange("")
                         }
                 )
             }
         },
         shape = RoundedCornerShape(100),
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .onFocusChanged { focusState ->
                 onFocusChange(focusState.isFocused)

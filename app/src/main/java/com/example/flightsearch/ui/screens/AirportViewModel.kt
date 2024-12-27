@@ -32,12 +32,9 @@ class AirportViewModel(
 
     private val _searchHistory = MutableStateFlow<Set<String>>(emptySet())
 
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery
-
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val airports: StateFlow<List<Airport>> = _searchQuery
+    val airports: StateFlow<List<Airport>> = _query
         .flatMapLatest { query ->
             if (query.isNotEmpty()) {
                 fetchAllAirports()
@@ -73,17 +70,14 @@ class AirportViewModel(
     }
 
     fun updateQuery(newQuery: String) {
+        if (newQuery != _query.value) {
+            _airportTimetable.value = emptyList()
+            _query.value = newQuery
+        }
         _airportTimetable.value = emptyList()
         _query.value = newQuery
     }
 
-    fun updateSearchQuery(newQuery: String) {
-        if (newQuery != _searchQuery.value) {
-            _airportTimetable.value = emptyList()
-            _query.value = newQuery
-            _searchQuery.value = newQuery
-        }
-    }
 
     fun generateTimetable(airport: Airport) {
         viewModelScope.launch {

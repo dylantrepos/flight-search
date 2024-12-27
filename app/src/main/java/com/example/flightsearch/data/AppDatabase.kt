@@ -15,32 +15,30 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
+        /**
+         * Returns the singleton instance of the database.
+         * @param context The application context.
+         * @return The singleton instance of the database.
+         */
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
-                val dbFile = context.getDatabasePath("app_database")
-                if (!dbFile.exists()) {
-                    Room.databaseBuilder(
+                try {
+                    val dbFile = context.getDatabasePath("app_database")
+                    val builder = Room.databaseBuilder(
                         context,
                         AppDatabase::class.java,
                         "app_database"
-                    )
-                        .createFromAsset("database/flight_search.db")
-                        .fallbackToDestructiveMigration()
-                        .build()
-                        .also {
-                            INSTANCE = it
-                        }
-                } else {
-                    Room.databaseBuilder(
-                        context,
-                        AppDatabase::class.java,
-                        "app_database"
-                    )
-                        .fallbackToDestructiveMigration()
-                        .build()
-                        .also {
-                            INSTANCE = it
-                        }
+                    ).fallbackToDestructiveMigration()
+
+                    if (!dbFile.exists()) {
+                        builder.createFromAsset("database/flight_search.db")
+                    }
+
+                    builder.build().also {
+                        INSTANCE = it
+                    }
+                } catch (e: Exception) {
+                    throw RuntimeException("Error creating database", e)
                 }
             }
         }

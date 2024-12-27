@@ -24,6 +24,15 @@ import com.example.flightsearch.model.Airport
 import java.util.Locale
 
 
+/**
+ * A composable function that displays a list of airport suggestions based on a query.
+ *
+ * @param airports The list of airports to display.
+ * @param query The current search query.
+ * @param onSuggestionClick A callback to be invoked when a suggestion is clicked.
+ * @param modifier The modifier to be applied to the suggestion list.
+ * @param contentPadding The padding to be applied to the content of the list.
+ */
 @Composable
 fun SuggestionList(
     airports: List<Airport>,

@@ -16,12 +16,22 @@ class FlightRepository(
 
     fun getFavoriteFlights(): Flow<List<Favorite>> = airportDao.getFavoriteFlights()
 
-    suspend fun addFavoriteFlight(flight: Favorite) =
+    /**
+     * Adds a favorite flight.
+     * @param flight The favorite flight to add.
+     */
+    suspend fun addFavoriteFlight(flight: Favorite) {
         airportDao.addFavoriteFlight(flight)
+    }
 
-    suspend fun deleteFavoriteFlight(favorite: Favorite) =
+    /**
+     * Deletes a favorite flight.
+     * @param favorite The favorite flight to delete.
+     */
+    suspend fun deleteFavoriteFlight(favorite: Favorite) {
         airportDao.removeFavoriteFlight(favorite.id)
+    }
 
-    fun findFavorite(departureCode: String, destinationCode: String) =
+    fun findFavorite(departureCode: String, destinationCode: String): Flow<Favorite?> =
         airportDao.findFavorite(departureCode, destinationCode)
 }

@@ -32,12 +32,13 @@ class AirportViewModel(
 
     private val _searchHistory = MutableStateFlow<Set<String>>(emptySet())
 
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val airports: StateFlow<List<Airport>> = _query
         .flatMapLatest { query ->
             if (query.isNotEmpty()) {
-                fetchAllAirports()
                 flightRepository.getAirportTimetable("%$query%")
             } else {
                 flowOf(emptyList())
@@ -74,45 +75,55 @@ class AirportViewModel(
             _airportTimetable.value = emptyList()
             _query.value = newQuery
         }
-        _airportTimetable.value = emptyList()
-        _query.value = newQuery
     }
-
 
     fun generateTimetable(airport: Airport) {
         viewModelScope.launch {
-            val airportList = fetchAllAirports().firstOrNull() ?: emptyList()
-            _airportTimetable.value = airportList.mapNotNull { arrival ->
-                if (arrival.iataCode != airport.iataCode) {
-                    val isFavorite = flightRepository.findFavorite(
-                        departureCode = airport.iataCode,
-                        destinationCode = arrival.iataCode
-                    ).firstOrNull()
-                    AirportTimetable(
-                        departure = airport,
-                        arrival = arrival,
-                        isFavorite = isFavorite != null
-                    )
-                } else {
-                    null
+            try {
+                val airportList = fetchAllAirports().firstOrNull() ?: emptyList()
+                _airportTimetable.value = airportList.mapNotNull { arrival ->
+                    if (arrival.iataCode != airport.iataCode) {
+                        val isFavorite = flightRepository.findFavorite(
+                            departureCode = airport.iataCode,
+                            destinationCode = arrival.iataCode
+                        ).firstOrNull()
+                        AirportTimetable(
+                            departure = airport,
+                            arrival = arrival,
+                            isFavorite = isFavorite != null
+                        )
+                    } else {
+                        null
+                    }
                 }
+                addSearchHistory(airport.iataCode)
+            } catch (e: Exception) {
+                _errorMessage.value = "Failed to generate timetable: ${e.message}"
             }
-            addSearchHistory(airport.iataCode)
         }
     }
 
     private fun addSearchHistory(searchedAirport: String) {
         viewModelScope.launch {
-            searchHistoryRepository.saveSearchQuery(searchedAirport)
-            _searchHistory.value = searchHistoryRepository.searchHistory.firstOrNull() ?: emptySet()
+            try {
+                searchHistoryRepository.saveSearchQuery(searchedAirport)
+                _searchHistory.value =
+                    searchHistoryRepository.searchHistory.firstOrNull() ?: emptySet()
+            } catch (e: Exception) {
+                _errorMessage.value = "Failed to add search history: ${e.message}"
+            }
         }
     }
 
-
-    fun removeSearchRepository(searchedAirport: Airport) {
+    fun removeSearchHistory(searchedAirport: Airport) {
         viewModelScope.launch {
-            searchHistoryRepository.removeSearchQuery(searchedAirport.iataCode)
-            _searchHistory.value = searchHistoryRepository.searchHistory.firstOrNull() ?: emptySet()
+            try {
+                searchHistoryRepository.removeSearchQuery(searchedAirport.iataCode)
+                _searchHistory.value =
+                    searchHistoryRepository.searchHistory.firstOrNull() ?: emptySet()
+            } catch (e: Exception) {
+                _errorMessage.value = "Failed to remove search history: ${e.message}"
+            }
         }
     }
 
@@ -137,14 +148,22 @@ class AirportViewModel(
     }
 
     suspend fun toggleFavorite(favorite: Favorite) {
-        val favoriteFound =
-            flightRepository.findFavorite(favorite.departureCode, favorite.destinationCode)
-                .firstOrNull()
-        if (favoriteFound != null) {
-            flightRepository.deleteFavoriteFlight(favoriteFound)
-        } else {
-            flightRepository.addFavoriteFlight(favorite)
+        try {
+            val favoriteFound =
+                flightRepository.findFavorite(favorite.departureCode, favorite.destinationCode)
+                    .firstOrNull()
+            if (favoriteFound != null) {
+                flightRepository.deleteFavoriteFlight(favoriteFound)
+            } else {
+                flightRepository.addFavoriteFlight(favorite)
+            }
+        } catch (e: Exception) {
+            _errorMessage.value = "Failed to toggle favorite: ${e.message}"
         }
+    }
+
+    fun clearErrorMessage() {
+        _errorMessage.value = null
     }
 
     companion object {

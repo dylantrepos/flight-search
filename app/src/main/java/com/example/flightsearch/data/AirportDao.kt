@@ -11,6 +11,11 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface AirportDao {
 
+    /**
+     * Retrieves the details of an airport by its IATA code.
+     * @param iata The IATA code of the airport.
+     * @return A Flow emitting the airport details.
+     */
     @Query(
         """
         SELECT * FROM airport
@@ -19,6 +24,10 @@ interface AirportDao {
     )
     fun getAirportDetails(iata: String): Flow<Airport>
 
+    /**
+     * Fetches all airports ordered by the number of passengers.
+     * @return A Flow emitting the list of airports.
+     */
     @Query(
         """
         SELECT * FROM airport
@@ -27,6 +36,11 @@ interface AirportDao {
     )
     fun fetchAllAirports(): Flow<List<Airport>>
 
+    /**
+     * Retrieves the timetable of an airport by its name or IATA code.
+     * @param airportName The name or IATA code of the airport.
+     * @return A Flow emitting the list of airports matching the query.
+     */
     @Query(
         """
         SELECT * FROM airport
@@ -36,6 +50,10 @@ interface AirportDao {
     )
     fun getAirportTimetable(airportName: String): Flow<List<Airport>>
 
+    /**
+     * Retrieves all favorite flights ordered by their ID.
+     * @return A Flow emitting the list of favorite flights.
+     */
     @Query(
         """
         SELECT * FROM favorite
@@ -44,12 +62,26 @@ interface AirportDao {
     )
     fun getFavoriteFlights(): Flow<List<Favorite>>
 
+    /**
+     * Adds a favorite flight to the database.
+     * @param favorite The favorite flight to add.
+     */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun addFavoriteFlight(favorite: Favorite)
 
+    /**
+     * Removes a favorite flight from the database by its ID.
+     * @param id The ID of the favorite flight to remove.
+     */
     @Query("DELETE FROM favorite WHERE id = :id")
     suspend fun removeFavoriteFlight(id: Int)
 
+    /**
+     * Finds a favorite flight by its departure and destination codes.
+     * @param departureCode The departure code of the flight.
+     * @param destinationCode The destination code of the flight.
+     * @return A Flow emitting the favorite flight if found.
+     */
     @Query(
         """
         SELECT * FROM favorite

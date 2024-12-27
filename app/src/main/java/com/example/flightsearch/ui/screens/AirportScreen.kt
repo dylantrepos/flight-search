@@ -31,6 +31,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -79,6 +82,21 @@ fun FlightSearchApp(
         val airportTimetable by viewModel.airportTimetable.collectAsState()
         val favorites by viewModel.favorites.collectAsState()
         val searchHistory by viewModel.searchHistoryAirports.collectAsState()
+        val errorMessage by viewModel.errorMessage.collectAsState()
+        val snackbarHostState = remember { SnackbarHostState() }
+
+        LaunchedEffect(errorMessage) {
+            errorMessage?.let {
+                val result = snackbarHostState.showSnackbar(
+                    message = it,
+                    actionLabel = "Dismiss"
+                )
+                if (result == SnackbarResult.ActionPerformed) {
+                    viewModel.clearErrorMessage()
+                }
+            }
+        }
+
 
         Scaffold(
             topBar = {
@@ -92,7 +110,8 @@ fun FlightSearchApp(
                         containerColor = MaterialTheme.colorScheme.primary
                     )
                 )
-            }
+            },
+            snackbarHost = { SnackbarHost(snackbarHostState) }
         ) { innerPadding ->
             HomeScreen(
                 airports = airports,
@@ -100,7 +119,7 @@ fun FlightSearchApp(
                 favorites = favorites,
                 onQueryChange = viewModel::updateQuery,
                 onSelectAirport = viewModel::generateTimetable,
-                onClearSearchHistory = viewModel::removeSearchRepository,
+                onClearSearchHistory = viewModel::removeSearchHistory,
                 timetable = airportTimetable,
                 modifier = Modifier.fillMaxSize(),
                 searchHistory = searchHistory,
@@ -114,6 +133,7 @@ fun FlightSearchApp(
         }
     }
 }
+
 
 @SuppressLint("RememberReturnType")
 @Composable

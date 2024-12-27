@@ -27,6 +27,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.example.flightsearch.R
 
+/**
+ * A composable function that represents a search bar item.
+ *
+ * @param query The current query text.
+ * @param onQueryChange A callback to be invoked when the query text changes.
+ * @param onFocusChange A callback to be invoked when the focus state changes.
+ * @param focusManager The focus manager to control focus state.
+ * @param modifier The modifier to be applied to the search bar.
+ */
 @Composable
 fun SearchBarItem(
     query: String,

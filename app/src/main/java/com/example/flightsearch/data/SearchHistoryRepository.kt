@@ -18,14 +18,21 @@ class SearchHistoryRepository(context: Context) {
             preferences[SEARCH_HISTORY_KEY] ?: emptySet()
         }
 
+    /**
+     * Saves a search query to the search history.
+     * @param query The search query to save.
+     */
     suspend fun saveSearchQuery(query: String) {
         dataStore.edit { preferences ->
             val currentHistory = preferences[SEARCH_HISTORY_KEY] ?: emptySet()
             preferences[SEARCH_HISTORY_KEY] = currentHistory + query
-
         }
     }
 
+    /**
+     * Removes a search query from the search history.
+     * @param query The search query to remove.
+     */
     suspend fun removeSearchQuery(query: String) {
         dataStore.edit { preferences ->
             val currentHistory = preferences[SEARCH_HISTORY_KEY] ?: emptySet()

@@ -9,11 +9,19 @@ interface AppContainer {
     val flightRepository: FlightRepository
 }
 
+/**
+ * Implementation of [AppContainer] that provides dependencies.
+ * @param context The application context.
+ */
 class AppDataContainer(private val context: Context) : AppContainer {
     /**
-     * Implementation for [FlightRepository]
+     * Lazily initialized instance of [FlightRepository].
      */
     override val flightRepository: FlightRepository by lazy {
-        FlightRepository(AppDatabase.getDatabase(context).airportDao())
+        try {
+            FlightRepository(AppDatabase.getDatabase(context).airportDao())
+        } catch (e: Exception) {
+            throw RuntimeException("Error initializing FlightRepository", e)
+        }
     }
 }

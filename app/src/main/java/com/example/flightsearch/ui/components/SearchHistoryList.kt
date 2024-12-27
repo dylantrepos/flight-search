@@ -22,7 +22,14 @@ import androidx.compose.ui.unit.dp
 import com.example.flightsearch.R
 import com.example.flightsearch.model.Airport
 
-
+/**
+ * A composable function that displays a list of recently searched airports.
+ *
+ * @param searchHistoryList The list of recently searched airports.
+ * @param onSearchHistory A callback to be invoked when an airport is selected from the search history.
+ * @param onClearSearchHistory A callback to be invoked when an airport is removed from the search history.
+ * @param modifier The modifier to be applied to the search history list.
+ */
 @Composable
 fun SearchHistoryList(
     searchHistoryList: List<Airport>,

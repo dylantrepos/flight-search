@@ -1,12 +1,12 @@
-package com.example.flightsearch.ui
+package com.example.flightsearch.ui.screens
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.flightsearch.data.Airport
-import com.example.flightsearch.data.AirportTimetable
-import com.example.flightsearch.data.Favorite
 import com.example.flightsearch.data.FlightRepository
 import com.example.flightsearch.data.SearchHistoryRepository
+import com.example.flightsearch.model.Airport
+import com.example.flightsearch.model.AirportTimetable
+import com.example.flightsearch.model.Favorite
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -78,9 +78,11 @@ class AirportViewModel(
     }
 
     fun updateSearchQuery(newQuery: String) {
-        _airportTimetable.value = emptyList()
-        _query.value = newQuery
-        _searchQuery.value = newQuery
+        if (newQuery != _searchQuery.value) {
+            _airportTimetable.value = emptyList()
+            _query.value = newQuery
+            _searchQuery.value = newQuery
+        }
     }
 
     fun generateTimetable(airport: Airport) {
@@ -112,28 +114,6 @@ class AirportViewModel(
         }
     }
 
-    fun searchFromHistory(airport: Airport) {
-        viewModelScope.launch {
-            val airportList = fetchAllAirports().firstOrNull() ?: emptyList()
-
-            _airportTimetable.value = airportList.mapNotNull { arrival ->
-                if (arrival.iataCode != airport.iataCode) {
-                    val isFavorite = flightRepository.findFavorite(
-                        departureCode = airport.iataCode,
-                        destinationCode = arrival.iataCode
-                    ).firstOrNull()
-                    AirportTimetable(
-                        departure = airport,
-                        arrival = arrival,
-                        isFavorite = isFavorite != null
-                    )
-                } else {
-                    null
-                }
-            }
-            addSearchHistory(airport.iataCode)
-        }
-    }
 
     fun removeSearchRepository(searchedAirport: Airport) {
         viewModelScope.launch {

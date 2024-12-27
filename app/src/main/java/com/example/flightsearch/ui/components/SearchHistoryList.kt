@@ -20,7 +20,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.flightsearch.R
-import com.example.flightsearch.data.Airport
+import com.example.flightsearch.model.Airport
 
 
 @Composable

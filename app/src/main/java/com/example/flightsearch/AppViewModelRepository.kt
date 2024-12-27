@@ -7,7 +7,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.flightsearch.data.FlightRepository
 import com.example.flightsearch.data.SearchHistoryRepository
-import com.example.flightsearch.ui.AirportViewModel
+import com.example.flightsearch.ui.screens.AirportViewModel
 
 object AppViewModelProvider {
     val Factory = viewModelFactory {

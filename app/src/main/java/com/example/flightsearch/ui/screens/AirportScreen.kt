@@ -1,4 +1,4 @@
-package com.example.flightsearch.ui
+package com.example.flightsearch.ui.screens
 
 import android.annotation.SuppressLint
 import androidx.compose.animation.core.Animatable
@@ -59,9 +59,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.compose.FlightSearchTheme
 import com.example.flightsearch.AppViewModelProvider
 import com.example.flightsearch.R
-import com.example.flightsearch.data.Airport
-import com.example.flightsearch.data.AirportTimetable
-import com.example.flightsearch.data.Favorite
+import com.example.flightsearch.model.Airport
+import com.example.flightsearch.model.AirportTimetable
+import com.example.flightsearch.model.Favorite
 import com.example.flightsearch.ui.components.SearchBarItem
 import com.example.flightsearch.ui.components.SearchHistoryList
 import com.example.flightsearch.ui.components.SuggestionList
@@ -202,9 +202,7 @@ fun HomeScreen(
             val showFlightsFrom = query.isNotEmpty() && !isFocused && timetable.isNotEmpty()
             val showSearchHistory = isFocused && query.isEmpty() && searchHistory.isNotEmpty()
             val showSuggestions = isFocused && query.isNotEmpty()
-            val showTimetable = !isFocused && query.isNotEmpty()
             val showEmptyState = query.isEmpty() && timetable.isEmpty() && favorites.isEmpty()
-
 
             if (showFlightsFrom) {
                 Row(

@@ -5,7 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.example.compose.FlightSearchTheme
-import com.example.flightsearch.ui.FlightSearchApp
+import com.example.flightsearch.ui.screens.FlightSearchApp
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

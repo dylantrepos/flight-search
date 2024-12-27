@@ -36,8 +36,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.compose.FlightSearchTheme
 import com.example.flightsearch.R
-import com.example.flightsearch.data.Airport
-import com.example.flightsearch.data.Favorite
+import com.example.flightsearch.model.Airport
+import com.example.flightsearch.model.Favorite
 import java.util.Locale
 
 @Composable

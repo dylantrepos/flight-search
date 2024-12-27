@@ -1,4 +1,4 @@
-package com.example.flightsearch.data
+package com.example.flightsearch.model
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity

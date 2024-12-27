@@ -78,6 +78,7 @@ class AirportViewModel(
     }
 
     fun generateTimetable(airport: Airport) {
+        if (_query.value.isEmpty()) return
         viewModelScope.launch {
             try {
                 val airportList = fetchAllAirports().firstOrNull() ?: emptyList()

@@ -157,6 +157,13 @@ class AirportViewModel(
             } else {
                 flightRepository.addFavoriteFlight(favorite)
             }
+            val departureAirport =
+                flightRepository.getAirportDetails(favorite.departureCode).firstOrNull()
+            if (departureAirport != null) {
+                generateTimetable(departureAirport)
+            } else {
+                _errorMessage.value = "Failed to find departure airport"
+            }
         } catch (e: Exception) {
             _errorMessage.value = "Failed to toggle favorite: ${e.message}"
         }
